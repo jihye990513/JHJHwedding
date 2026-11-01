@@ -70,41 +70,6 @@ const Location: React.FC = () => {
     };
   }, []);
 
-
-
-  // ... Tmap handler code ...
-  const handleTmapRoute = () => {
-    const destination = {
-      name: uiText.location.venueTitle,
-      lat: siteConfig.location.coordinates.lat,
-      lon: siteConfig.location.coordinates.lng
-    };
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const tmapAppUrl = `tmap://route?goalname=${encodeURIComponent(destination.name)}&goaly=${destination.lat}&goalx=${destination.lon}&starty=${latitude}&startx=${longitude}`;
-          const tmapWebUrl = `https://apis.openapi.sk.com/tmap/app/routes?appKey=${import.meta.env.VITE_TMAP_API_KEY}&version=1&format=json&callback=result&goal=${destination.name}&goalY=${destination.lat}&goalX=${destination.lon}&startY=${latitude}&startX=${longitude}`;
-
-          if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-            window.location.href = tmapAppUrl;
-            setTimeout(() => { window.open(tmapWebUrl, '_blank'); }, 2000);
-          } else {
-            window.open(tmapWebUrl, '_blank');
-          }
-        },
-        (error) => {
-          console.error(uiText.location.map.locationDenied, error);
-          const tmapWebUrlNoStart = `https://apis.openapi.sk.com/tmap/app/routes?appKey=${import.meta.env.VITE_TMAP_API_KEY}&version=1&format=json&callback=result&goal=${destination.name}&goalY=${destination.lat}&goalX=${destination.lon}`;
-          window.open(tmapWebUrlNoStart, '_blank');
-        }
-      );
-    } else {
-      alert(uiText.location.map.browserNotSupported);
-    }
-  };
-
   // ... initNaverMap code ...
   useEffect(() => {
     let mounted = true;
@@ -292,16 +257,12 @@ const Location: React.FC = () => {
         transition={{ duration: 0.6, delay: 0.4 }}
         className="w-full px-1 py-3 shrink-0"
       >
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {/* ... Buttons (Naver, Tmap, Kakao) ... */}
           <a href={`https://map.naver.com/p/search/${encodeURIComponent(uiText.location.venueTitle)}?c=15.00,0,0,0,dh`} target="_blank" rel="noopener noreferrer" className="flex flex-row items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white hover:bg-gray-50 transition-all shadow-sm border border-gray-200">
             <div className="w-8 h-8 flex items-center justify-center rounded-lg overflow-hidden"><img src={loadImage('navermap')} alt="네이버지도" className="w-full h-full object-cover" /></div>
             <span className="text-[11px] text-gray-700 font-medium">{weddingData.location.navigation.naver}</span>
           </a>
-          <button onClick={handleTmapRoute} className="flex flex-row items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white hover:bg-gray-50 transition-all shadow-sm border border-gray-200 cursor-pointer">
-            <div className="w-8 h-8 flex items-center justify-center rounded-lg overflow-hidden"><img src={loadImage('tmap')} alt="티맵" className="w-full h-full object-cover" /></div>
-            <span className="text-[11px] text-gray-700 font-medium">{weddingData.location.navigation.tmap}</span>
-          </button>
           <a href={`https://map.kakao.com/link/map/${encodeURIComponent(uiText.location.venueTitle)},${siteConfig.location.coordinates.lat},${siteConfig.location.coordinates.lng}`} target="_blank" rel="noopener noreferrer" className="flex flex-row items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white hover:bg-gray-50 transition-all shadow-sm border border-gray-200">
             <div className="w-8 h-8 flex items-center justify-center rounded-lg overflow-hidden"><img src={loadImage('kakaonav')} alt="카카오내비" className="w-full h-full object-cover" /></div>
             <span className="text-[11px] text-gray-700 font-medium">{weddingData.location.navigation.kakao}</span>
