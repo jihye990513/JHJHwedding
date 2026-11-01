@@ -78,42 +78,15 @@ export function usePrivateInfo() {
             return;
         }
 
-        // [NEW] 데모 포트폴리오를 위한 더미 데이터 반환
+        // 서버에서 개인정보 가져오기
         const fetchData = async (): Promise<PrivateInfo> => {
-            return {
-                groom: {
-                    name: '김철수',
-                    firstName: '철수',
-                    phone: '010-1234-5678',
-                    parents: {
-                        mother: { name: '이영희', phone: '010-1111-2222' },
-                        relation: '아들'
-                    }
-                },
-                bride: {
-                    name: '박지민',
-                    firstName: '지민',
-                    phone: '010-9876-5432',
-                    parents: {
-                        father: { name: '박기둥', phone: '010-3333-4444' },
-                        relation: '딸'
-                    }
-                },
-                accounts: {
-                    groom: [
-                        { bank: '우리은행', name: '이영희', num: '123-456-789012' },
-                        { bank: '기업은행', name: '김철수', num: '987-654-321098' }
-                    ],
-                    bride: [
-                        { bank: '카카오뱅크', name: '박지민', num: '3333-22-1111111' }
-                    ]
-                },
-                images: {
-                    hero: '',
-                    gallery: [],
-                    closing: ''
-                }
-            };
+            const response = await fetch('/api/private-info');
+
+            if (!response.ok) {
+                throw new Error('개인정보를 불러오지 못했습니다.');
+            }
+
+            return response.json();
         };
 
         fetchPromise = fetchData();

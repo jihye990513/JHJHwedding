@@ -99,7 +99,7 @@ const Gift: React.FC = () => {
 	const currentAccounts = activeTab === 'groom' ? groomAccounts : brideAccounts;
 
 	return (
-		<div className="h-full w-full flex flex-col items-center bg-[#f8f8f8] px-8 pb-12 overflow-hidden">
+		<div className="h-full w-full flex flex-col items-center bg-[#f8f8f8] px-8 pb-12 overflow-y-auto overflow-x-hidden no-scrollbar">
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -158,16 +158,6 @@ const Gift: React.FC = () => {
 					))}
 				</div>
 			</motion.div>
-
-			<motion.p
-				initial={{ opacity: 0 }}
-				whileInView={{ opacity: 1 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.5, delay: 0.5 }}
-				className="mt-10 text-[11px] font-nanumsquare text-gray-400 text-center leading-relaxed whitespace-pre-line"
-			>
-				{weddingData.gift.footer}
-			</motion.p>
 
 			{/* Toast Popup */}
 			<AnimatePresence>

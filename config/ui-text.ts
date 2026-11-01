@@ -46,7 +46,7 @@ export const uiText = {
     location: {
         label: "LOCATION",
         title: "오시는 길",
-        venueTitle: "토미스퀘어가든",
+        venueTitle: "춘천 스카이컨벤션웨딩홀",
         copyButton: "주소가 복사되었습니다.",
         navigation: {
             naver: "네이버",

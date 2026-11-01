@@ -128,9 +128,7 @@ const Location: React.FC = () => {
         const contentString = [
           '<div style="padding:10px;min-width:200px;line-height:150%;">',
           `<h4 style="margin-top:5px;">${weddingData.common.location.name}</h4>`,
-          `<p>${weddingData.common.location.addressShort}<br />`,
-          `  <span style="color:#555;font-size:13px;">${weddingData.common.location.tel}</span>`,
-          '</p>',
+          `<p>${weddingData.common.location.addressShort}</p>`,
           '</div>'
         ].join('');
 
@@ -241,9 +239,6 @@ const Location: React.FC = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-center gap-2">
             <h3 className="text-lg font-gowoon text-gray-700">{weddingData.common.location.name}</h3>
-            <a href={`tel:${weddingData.common.location.tel}`} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
-              <i className="fa-solid fa-phone text-xs"></i>
-            </a>
           </div>
 
           <div className="flex items-center justify-center gap-2">
@@ -338,46 +333,6 @@ const Location: React.FC = () => {
             ))}
           </div>
           <div className="border-b border-gray-100 mt-8"></div>
-        </motion.section>
-
-        {/* 버스 */}
-        <motion.section variants={itemVariants} className="w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <i className="fa-solid fa-bus text-gray-800 text-lg"></i>
-            <h3 className="text-base font-joseon text-gray-900 uppercase tracking-wider font-bold">{transport.bus.title}</h3>
-          </div>
-          <div className="space-y-6 font-nanumsquare">
-            {transport.bus.items.map((item, idx) => (
-              <div key={idx}>
-                <p className="text-sm text-gray-800 font-bold mb-1">{item.label}</p>
-                <p className="text-sm text-gray-500 mb-1">{item.value}</p>
-              </div>
-            ))}
-            {transport.bus.routes && (
-              <div className="text-xs text-gray-500 space-y-1 bg-white border border-gray-100 p-3 rounded-lg">
-                <p><span className="text-green-600 font-medium font-bold">{transport.bus.routes.green.label}</span> {transport.bus.routes.green.value}</p>
-                <p><span className="text-blue-600 font-medium font-bold">{transport.bus.routes.blue.label}</span> {transport.bus.routes.blue.value}</p>
-              </div>
-            )}
-          </div>
-          <div className="border-b border-gray-100 mt-8"></div>
-        </motion.section>
-
-        {/* 기차 (KTX/SRT) */}
-        <motion.section variants={itemVariants} className="w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <i className="fa-solid fa-train text-gray-800 text-lg"></i>
-            <h3 className="text-base font-joseon text-gray-900 uppercase tracking-wider font-bold">{transport.train.title}</h3>
-          </div>
-          <div className="space-y-6 font-nanumsquare">
-            {transport.train.items.map((item, idx) => (
-              <div key={idx}>
-                <p className="text-sm text-gray-800 font-bold mb-1">{item.label}</p>
-                <p className="text-sm text-gray-500">{item.value}</p>
-                {item.subValue && <p className="text-sm text-gray-500 mt-1">{item.subValue}</p>}
-              </div>
-            ))}
-          </div>
         </motion.section>
       </motion.div>
     </div>

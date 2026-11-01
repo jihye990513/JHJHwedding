@@ -12,12 +12,8 @@ import { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 
 // CORS 허용 도메인
 const ALLOWED_ORIGINS = [
-    'https://wedding-gayul.netlify.app',
-    'https://bong-yul-invitation.netlify.app',
-    'https://wedding-flax-iota.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:5173'
+    'https://jhjh-wedding.netlify.app',
+    'http://localhost:3000'
 ];
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
@@ -81,21 +77,36 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         accounts: {
             groom: [
                 {
-                    bank: process.env.PRIVATE_GROOM_MOTHER_BANK || '은행',
-                    name: process.env.PRIVATE_GROOM_MOTHER_NAME || '어머니',
-                    num: process.env.PRIVATE_GROOM_MOTHER_ACCOUNT || '****************'
-                },
-                {
                     bank: process.env.PRIVATE_GROOM_BANK || '은행',
                     name: process.env.PRIVATE_GROOM_NAME || '신랑',
-                    num: process.env.PRIVATE_GROOM_ACCOUNT || '****************'
+                    num: process.env.PRIVATE_GROOM_ACCOUNT || ''
+                },
+                {
+                    bank: process.env.PRIVATE_GROOM_FATHER_BANK || '은행',
+                    name: process.env.PRIVATE_GROOM_FATHER_NAME || '신랑 아버지',
+                    num: process.env.PRIVATE_GROOM_FATHER_ACCOUNT || ''
+                },
+                {
+                    bank: process.env.PRIVATE_GROOM_MOTHER_BANK || '은행',
+                    name: process.env.PRIVATE_GROOM_MOTHER_NAME || '신랑 어머니',
+                    num: process.env.PRIVATE_GROOM_MOTHER_ACCOUNT || ''
                 }
             ],
             bride: [
                 {
                     bank: process.env.PRIVATE_BRIDE_BANK || '은행',
                     name: process.env.PRIVATE_BRIDE_NAME || '신부',
-                    num: process.env.PRIVATE_BRIDE_ACCOUNT || '****************'
+                    num: process.env.PRIVATE_BRIDE_ACCOUNT || ''
+                },
+                {
+                    bank: process.env.PRIVATE_BRIDE_FATHER_BANK || '은행',
+                    name: process.env.PRIVATE_BRIDE_FATHER_NAME || '신부 아버지',
+                    num: process.env.PRIVATE_BRIDE_FATHER_ACCOUNT || ''
+                },
+                {
+                    bank: process.env.PRIVATE_BRIDE_MOTHER_BANK || '은행',
+                    name: process.env.PRIVATE_BRIDE_MOTHER_NAME || '신부 어머니',
+                    num: process.env.PRIVATE_BRIDE_MOTHER_ACCOUNT || ''
                 }
             ]
         },

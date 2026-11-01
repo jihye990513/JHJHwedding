@@ -23,21 +23,14 @@ interface ThankYouProps {
 }
 
 const ThankYou: React.FC<ThankYouProps> = ({ onModalStateChange }) => {
-	const [daysSinceFirstMeet, setDaysSinceFirstMeet] = useState(0);
 	const [daysSinceWedding, setDaysSinceWedding] = useState(0);
 
 	// 첫 만남 · 예식 일시 (config/site.ts)
-	const firstMeetDate = new Date(siteConfig.date.firstMeet);
 	const weddingDate = new Date(siteConfig.date.iso);
 
 	useEffect(() => {
 		const calculateDays = () => {
 			const now = new Date();
-
-			// 첫 만남 이후 경과일 (절댓값)
-			const diffTimeFirstMeet = now.getTime() - firstMeetDate.getTime();
-			const diffDaysFirstMeet = Math.abs(Math.floor(diffTimeFirstMeet / (1000 * 60 * 60 * 24)));
-			setDaysSinceFirstMeet(diffDaysFirstMeet);
 
 			// 결혼 이후 경과일 (절댓값)
 			const diffTimeWedding = now.getTime() - weddingDate.getTime();
@@ -126,16 +119,17 @@ const ThankYou: React.FC<ThankYouProps> = ({ onModalStateChange }) => {
 						{uiText.thankYou.title}
 					</motion.h1>
 
-					{/* 디데이 표시 */}
+					{/* 결혼 후 경과일 표시 */}
 					<motion.div
 						variants={itemVariants}
 						className="inline-block mb-8 px-8 py-5 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20"
 					>
 						<p className="text-white font-gowoon text-sm md:text-base leading-relaxed">
-							{uiText.thankYou.daysSince.dating} <span className="font-bold font-nanumsquare text-lg md:text-xl mx-1">{daysSinceFirstMeet}</span>{uiText.thankYou.daysSince.unit}
-						</p>
-						<p className="text-white font-gowoon text-sm md:text-base leading-relaxed mt-2">
-							{uiText.thankYou.daysSince.married} <span className="font-bold font-nanumsquare text-lg md:text-xl mx-1">{daysSinceWedding}</span>{uiText.thankYou.daysSince.unit}
+							{uiText.thankYou.daysSince.married}
+							<span className="font-bold font-nanumsquare text-lg md:text-xl mx-1">
+								{daysSinceWedding}
+							</span>
+							{uiText.thankYou.daysSince.unit}
 						</p>
 					</motion.div>
 
