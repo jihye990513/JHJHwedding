@@ -53,11 +53,15 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         groom: {
             name: process.env.PRIVATE_GROOM_NAME || '신랑',
             firstName: process.env.PRIVATE_GROOM_FIRST_NAME || '신랑',
-            phone: process.env.PRIVATE_GROOM_PHONE || '010-****-****',
+            phone: process.env.PRIVATE_GROOM_PHONE || '',
             parents: {
+                father: {
+                    name: process.env.PRIVATE_GROOM_FATHER_NAME || '',
+                    phone: process.env.PRIVATE_GROOM_FATHER_PHONE || ''
+                },
                 mother: {
-                    name: process.env.PRIVATE_GROOM_MOTHER_NAME || '어머니',
-                    phone: process.env.PRIVATE_GROOM_MOTHER_PHONE || '010-****-****'
+                    name: process.env.PRIVATE_GROOM_MOTHER_NAME || '',
+                    phone: process.env.PRIVATE_GROOM_MOTHER_PHONE || ''
                 },
                 relation: '아들'
             }
@@ -65,11 +69,15 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         bride: {
             name: process.env.PRIVATE_BRIDE_NAME || '신부',
             firstName: process.env.PRIVATE_BRIDE_FIRST_NAME || '신부',
-            phone: process.env.PRIVATE_BRIDE_PHONE || '010-****-****',
+            phone: process.env.PRIVATE_BRIDE_PHONE || '',
             parents: {
                 father: {
-                    name: process.env.PRIVATE_BRIDE_FATHER_NAME || '아버지',
-                    phone: process.env.PRIVATE_BRIDE_FATHER_PHONE || '010-****-****'
+                    name: process.env.PRIVATE_BRIDE_FATHER_NAME || '',
+                    phone: process.env.PRIVATE_BRIDE_FATHER_PHONE || ''
+                },
+                mother: {
+                    name: process.env.PRIVATE_BRIDE_MOTHER_NAME || '',
+                    phone: process.env.PRIVATE_BRIDE_MOTHER_PHONE || ''
                 },
                 relation: '딸'
             }

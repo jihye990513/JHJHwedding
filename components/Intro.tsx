@@ -83,8 +83,10 @@ const Intro: React.FC = () => {
 
     const groom = weddingData.common?.groom;
     const bride = weddingData.common?.bride;
+    const groomFather = groom?.parents?.father;
     const groomMother = groom?.parents?.mother;
     const brideFather = bride?.parents?.father;
+    const brideMother = bride?.parents?.mother;
     const intro = weddingData.intro;
 
     return (
@@ -237,6 +239,11 @@ const Intro: React.FC = () => {
                                         name={groom?.name}
                                         phone={groom?.phone}
                                     />
+                                     <ContactRow
+                                        label="신랑 아버지"
+                                        name={groomFather?.name}
+                                        phone={groomFather?.phone}
+                                    />
                                     <ContactRow
                                         label="신랑 어머니"
                                         name={groomMother?.name}
@@ -262,6 +269,11 @@ const Intro: React.FC = () => {
                                         label="신부 아버지"
                                         name={brideFather?.name}
                                         phone={brideFather?.phone}
+                                    />
+                                    <ContactRow
+                                        label="신부 어머니"
+                                        name={brideMother?.name}
+                                        phone={brideMother?.phone}
                                     />
                                 </div>
                             </div>
