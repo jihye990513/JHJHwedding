@@ -118,7 +118,6 @@ ${siteConfig.location.name} ${siteConfig.location.hall}`,
                 alert: uiText.share.kakao.alert
             }
         },
-        footer: siteConfig.footer
     };
 };
 

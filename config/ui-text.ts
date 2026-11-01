@@ -198,12 +198,11 @@ export const uiText = {
 
     thankYou: {
         label: "Thank You",
-        title: "방문해 주셔서\n감사합니다",
+        title: "함께해 주셔서\n감사합니다",
         daysSince: {
-            dating: "연인으로 시작한 지",
-            married: "인생을 함께하기 시작한 지",
-            unit: "일째"
+            married: "부부로 함께한 지",
+            unit: "일"
         },
-        message: "함께해 주신 모든 분들께 진심으로 감사드립니다.\n받은 사랑 잊지 않고 행복하게 잘 살겠습니다."
+        message: "저희의 시작을 축복해 주신 모든 분께\n진심으로 감사드립니다.\n\n보내주신 따뜻한 마음 오래 간직하며\n서로 아끼고 사랑하며 살겠습니다."
     }
 };

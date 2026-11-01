@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Hero from './components/Hero';
 import MainContent from './components/MainContent';
 import OpeningSequence from './components/OpeningSequence';
@@ -18,9 +18,32 @@ const WeddingApp: React.FC = () => {
   const [showOpening, setShowOpening] = useState(true);
   const [isAnyModalOpen, setIsAnyModalOpen] = useState(false);
 
-  // 데모용 감사 화면 전환
-  const isAfterWedding =
-  new Date() >= new Date('2026-12-26T11:30:00+09:00');
+  // 예식 시작 30분 후 감사 화면으로 전환
+  const [isAfterWedding, setIsAfterWedding] = useState(
+    () => Date.now() >= Date.parse('2026-12-26T11:30:00+09:00')
+  );
+
+  useEffect(() => {
+    const checkWeddingTime = () => {
+      setIsAfterWedding(
+        Date.now() >= Date.parse('2026-12-26T11:30:00+09:00')
+      );
+    };
+
+    const interval = setInterval(checkWeddingTime, 1000);
+
+    window.addEventListener('focus', checkWeddingTime);
+    document.addEventListener('visibilitychange', checkWeddingTime);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkWeddingTime);
+      document.removeEventListener(
+        'visibilitychange',
+        checkWeddingTime
+      );
+    };
+  }, []);
 
   const touchStartY = useRef(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -302,14 +325,6 @@ const WeddingApp: React.FC = () => {
       <div className="fixed inset-0 bg-gray-100 flex justify-center items-center overflow-hidden">
         <div className="relative w-full h-full max-w-[430px] md:max-w-[550px] bg-[#f8f8f8] shadow-2xl overflow-hidden">
           <ThankYou onModalStateChange={setIsAnyModalOpen} />
-
-          <button
-            onClick={() => setIsAfterWedding(false)}
-            className="absolute bottom-6 right-6 z-[9999] bg-gray-800/90 text-white px-5 py-3 rounded-2xl shadow-xl text-xs font-bold tracking-wide hover:bg-black transition-colors flex items-center gap-2 backdrop-blur-md"
-          >
-            <i className="fa-regular fa-envelope"></i>
-            <span>청첩장 보기</span>
-          </button>
         </div>
       </div>
     );
@@ -385,16 +400,6 @@ const WeddingApp: React.FC = () => {
         </div>
 
         {currentIdx >= 1 && <ShareButton />}
-
-        {!isAnyModalOpen && (
-          <button
-            onClick={() => setIsAfterWedding(true)}
-            className="absolute bottom-6 right-6 z-[9999] bg-gray-800/90 text-white px-5 py-3 rounded-2xl shadow-xl text-xs font-bold tracking-wide hover:bg-black transition-colors flex items-center gap-2 backdrop-blur-md"
-          >
-            <i className="fa-solid fa-gift"></i>
-            <span>감사인사 보기</span>
-          </button>
-        )}
       </div>
     </div>
   );

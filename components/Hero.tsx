@@ -87,6 +87,9 @@ const Hero: React.FC<HeroProps> = ({ startAnimation }) => {
           className="text-white font-myeongjo text-lg md:text-xl tracking-widest mb-3"
         >
           {weddingData.common.date.full}
+          <span className="block mt-2 text-base md:text-lg">
+            {weddingData.common.date.time}
+          </span>
         </motion.p>
 
         {/* 4. Location (Right -> Left) */}

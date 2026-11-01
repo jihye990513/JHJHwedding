@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Guestbook from './Guestbook';
-import { weddingData } from '@/data/content';
+import { useWeddingData } from '@/hooks/useWeddingData';
 import { loadImage } from '@/lib/image-loader';
 import { uiText } from '@/config/ui-text';
 import { siteConfig } from '@/config/site';
@@ -23,6 +23,7 @@ interface ThankYouProps {
 }
 
 const ThankYou: React.FC<ThankYouProps> = ({ onModalStateChange }) => {
+	const { weddingData } = useWeddingData();
 	const [daysSinceWedding, setDaysSinceWedding] = useState(0);
 
 	// 첫 만남 · 예식 일시 (config/site.ts)
@@ -34,7 +35,10 @@ const ThankYou: React.FC<ThankYouProps> = ({ onModalStateChange }) => {
 
 			// 결혼 이후 경과일 (절댓값)
 			const diffTimeWedding = now.getTime() - weddingDate.getTime();
-			const diffDaysWedding = Math.abs(Math.floor(diffTimeWedding / (1000 * 60 * 60 * 24)));
+			const diffDaysWedding = Math.max(
+				0,
+				Math.floor(diffTimeWedding / (1000 * 60 * 60 * 24))
+			);
 			setDaysSinceWedding(diffDaysWedding);
 		};
 

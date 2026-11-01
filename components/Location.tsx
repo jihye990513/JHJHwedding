@@ -160,7 +160,7 @@ const Location: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full flex flex-col items-center bg-[#f8f8f8] overflow-y-auto overflow-x-hidden no-scrollbar pb-12"
+      className="relative h-full w-full flex flex-col items-center bg-[#f8f8f8] overflow-y-auto overflow-x-hidden no-scrollbar"
       // Stop touch propagation to prevent section switch when scrolling inside content
       onTouchStart={(e) => {
         // Stop propagation if we are inside content to prevent App swipe
@@ -253,7 +253,7 @@ const Location: React.FC = () => {
       {/* 네비게이션 버튼 섹션 */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 2, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
         className="w-full px-1 py-3 shrink-0"
       >
@@ -280,20 +280,14 @@ const Location: React.FC = () => {
       >
         {/* 자가용 */}
         <motion.section variants={itemVariants} className="w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <i className="fa-solid fa-car text-gray-800 text-lg"></i>
-            <h3 className="text-base font-joseon text-gray-900 uppercase tracking-wider font-bold">{transport.car.title}</h3>
-          </div>
           <div className="space-y-6 font-nanumsquare">
             {transport.car.items.map((item, idx) => (
               <div key={idx}>
                 <p className="text-sm text-gray-800 font-bold mb-1">{item.label}</p>
-                <p className="text-sm text-gray-500">{item.value}</p>
-                {item.subValue && <p className="text-sm text-gray-500">{item.subValue}</p>}
+                <p className="text-sm text-gray-500 whitespace-pre-line">{item.value}</p>
               </div>
             ))}
           </div>
-          <div className="border-b border-gray-100 mt-8"></div>
         </motion.section>
       </motion.div>
     </div>

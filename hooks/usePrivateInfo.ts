@@ -80,7 +80,11 @@ export function usePrivateInfo() {
 
         // 서버에서 개인정보 가져오기
         const fetchData = async (): Promise<PrivateInfo> => {
-            const response = await fetch('/api/private-info');
+            const response = await fetch(
+                import.meta.env.DEV
+                    ? 'https://jhjh-wedding.netlify.app/api/private-info'
+                    : '/api/private-info'
+            );
 
             if (!response.ok) {
                 throw new Error('개인정보를 불러오지 못했습니다.');

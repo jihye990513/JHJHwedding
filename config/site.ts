@@ -17,7 +17,7 @@ export const siteConfig = {
         day: "26",
         weekDay: "토요일",
         time: "오전 11시",
-        iso: "2026-12-26T11:00:00+09:00",
+        iso: "2026-12-26T11:00:00+09:00"
     },
 
     // 결혼식장 정보
@@ -37,10 +37,12 @@ export const siteConfig = {
     // 대중교통 안내
     transport: {
         car: {
-            title: "자가용",
+            title: "",
             items: [
-                { label: "내비게이션", value: "'춘천 스카이컨벤션웨딩홀' 또는 '춘천순환로 770' 검색" },
-                { label: "주차 안내", value: "건물 내 지상 주차장 이용", subValue: "웨딩홀 방문객 무료 주차" }
+                {
+                    label: "주차 안내",
+                    value: "건물 내 지상 주차장 이용 가능하며,\n웨딩홀 방문객 무료 주차 가능합니다."
+                }
             ]
         },
     },
