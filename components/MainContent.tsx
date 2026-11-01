@@ -3,7 +3,6 @@ import Intro from './Intro';
 import Profiles from './Profiles';
 import Gallery from './Gallery';
 import Location from './Location';
-import Rsvp from './Rsvp';
 import Gift from './Gift';
 import Guestbook from './Guestbook';
 import Closing from './Closing';
@@ -16,7 +15,6 @@ interface MainContentProps {
 
 const SECTIONS = [
     'intro',
-    'rsvp',
     'profiles',
     'gallery',
     'location',
@@ -94,12 +92,6 @@ const MainContent = forwardRef<HTMLDivElement, MainContentProps>(
 
                 <section id="intro">
                     <Intro />
-                </section>
-
-                <SectionDivider />
-
-                <section id="rsvp">
-                    <Rsvp onModalStateChange={onModalStateChange} />
                 </section>
 
                 <SectionDivider />
