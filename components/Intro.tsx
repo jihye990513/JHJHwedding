@@ -73,9 +73,8 @@ const Intro: React.FC = () => {
             <div className="relative z-10">
                 <motion.div
                     variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
+                    initial={false}
+                    animate="visible"
                     className="space-y-8 max-w-lg"
                 >
                     <motion.div variants={itemVariants} className="pt-8 pb-3">
