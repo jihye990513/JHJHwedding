@@ -284,7 +284,7 @@ const Location: React.FC = () => {
             {transport.car.items.map((item, idx) => (
               <div key={idx}>
                 <p className="text-sm text-gray-800 font-bold mb-1">{item.label}</p>
-                <p className="text-sm text-gray-500 whitespace-pre-line">{item.value}</p>
+                <p className="text-sm text-gray-500 whitespace-pre-line leading-6">{item.value}</p>
               </div>
             ))}
           </div>

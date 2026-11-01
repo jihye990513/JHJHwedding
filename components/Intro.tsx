@@ -52,7 +52,6 @@ const ContactRow: React.FC<ContactRowProps> = ({
 const Intro: React.FC = () => {
     const { weddingData } = useWeddingData();
     const [isContactOpen, setIsContactOpen] = useState(false);
-    const [showScrollIndicator, setShowScrollIndicator] = useState(true);
 
     useModalBackHandler(isContactOpen, () => setIsContactOpen(false));
 
@@ -72,14 +71,6 @@ const Intro: React.FC = () => {
             window.removeEventListener('touchmove', preventScroll);
         };
     }, [isContactOpen]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setShowScrollIndicator(false);
-        }, 3000);
-
-        return () => clearTimeout(timer);
-    }, []);
 
     const groom = weddingData.common?.groom;
     const bride = weddingData.common?.bride;
@@ -157,36 +148,6 @@ const Intro: React.FC = () => {
                     <span>{intro.contactButton}</span>
                 </button>
             </div>
-
-            {/* 스크롤 안내 */}
-            <AnimatePresence>
-                {showScrollIndicator && !isContactOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -30 }}
-                        transition={{ duration: 0.5 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-                    >
-                        <div className="flex flex-col items-center">
-                            <div className="relative w-10 h-16 rounded-full border-2 border-gray-500/60 flex justify-center bg-white/10 backdrop-blur-sm">
-                                <motion.div
-                                    className="absolute top-3 w-2.5 h-2.5 bg-gray-600 rounded-full"
-                                    animate={{ y: [0, 28, 0] }}
-                                    transition={{
-                                        duration: 1.5,
-                                        repeat: 1,
-                                        ease: 'easeInOut'
-                                    }}
-                                />
-                            </div>
-                            <p className="mt-3 text-gray-500 text-xs tracking-widest uppercase font-medium">
-                                Scroll Down
-                            </p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* 연락처 모달 */}
             <AnimatePresence>

@@ -172,7 +172,7 @@ export const uiText = {
             name: "이름을 입력해주세요.",
             password: "비밀번호는 4자리 숫자여야 합니다.",
             message: "메시지를 입력해주세요.",
-            length: "메시지는 300자를 초과할 수 없습니다.",
+            length: "메시지는 200자를 초과할 수 없습니다.",
             fail: "작업을 완료할 수 없습니다.",
             passwordMismatch: "비밀번호가 일치하지 않습니다."
         },

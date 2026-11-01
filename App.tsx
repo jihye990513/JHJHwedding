@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef
+} from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Hero from './components/Hero';
 import MainContent from './components/MainContent';
 import OpeningSequence from './components/OpeningSequence';
 import ShareButton from './components/ShareButton';
-import ForsythiaParticles from './components/ForsythiaParticles';
+import SnowParticles from './components/SnowParticles';
 import { preloadGalleryImages } from './lib/image-loader';
 import AdminPage from './components/Admin/AdminPage';
 import ThankYou from './components/ThankYou';
@@ -23,6 +28,13 @@ const WeddingApp: React.FC = () => {
     () => Date.now() >= Date.parse('2026-12-26T11:30:00+09:00')
   );
 
+  const touchStartY = useRef(0);
+  const mainContentRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollLockedRef = useRef(false);
+  const scrollTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     const checkWeddingTime = () => {
       setIsAfterWedding(
@@ -31,25 +43,15 @@ const WeddingApp: React.FC = () => {
     };
 
     const interval = setInterval(checkWeddingTime, 1000);
-
     window.addEventListener('focus', checkWeddingTime);
     document.addEventListener('visibilitychange', checkWeddingTime);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', checkWeddingTime);
-      document.removeEventListener(
-        'visibilitychange',
-        checkWeddingTime
-      );
+      document.removeEventListener('visibilitychange', checkWeddingTime);
     };
   }, []);
-
-  const touchStartY = useRef(0);
-  const mainContentRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const scrollLockedRef = useRef(false);
-  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     preloadGalleryImages();
@@ -82,65 +84,71 @@ const WeddingApp: React.FC = () => {
     }
   };
 
-  const handleScroll = useCallback((delta: number) => {
-    if (
-      scrollLockedRef.current ||
-      isAnyModalOpen ||
-      isAfterWedding ||
-      delta === 0
-    ) {
-      return;
-    }
-
-    // 오프닝 중에도 스크롤하면 즉시 닫기
-    setShowOpening(false);
-
-    const moveToSection = (index: number) => {
-      scrollLockedRef.current = true;
-      setIsScrolling(true);
-      setCurrentIdx(index);
-
-      if (scrollTimerRef.current) {
-        clearTimeout(scrollTimerRef.current);
-      }
-
-      scrollTimerRef.current = setTimeout(() => {
-        scrollLockedRef.current = false;
-        setIsScrolling(false);
-      }, 800);
-    };
-
-    if (currentIdx === 1) {
+  const handleScroll = useCallback(
+    (delta: number) => {
       if (
-        mainContentRef.current &&
-        mainContentRef.current.scrollTop <= 0 &&
-        delta < 0
+        scrollLockedRef.current ||
+        isAnyModalOpen ||
+        isAfterWedding ||
+        delta === 0
       ) {
-        moveToSection(0);
+        return;
       }
 
-      return;
-    }
+      // 오프닝 중에도 스크롤하면 즉시 닫기
+      setShowOpening(false);
 
-    if (delta > 0 && currentIdx < SECTIONS.length - 1) {
-      moveToSection(currentIdx + 1);
-    } else if (delta < 0 && currentIdx > 0) {
-      moveToSection(currentIdx - 1);
-    }
-  }, [currentIdx, isAnyModalOpen, isAfterWedding]);
+      const moveToSection = (index: number) => {
+        scrollLockedRef.current = true;
+        setIsScrolling(true);
+        setCurrentIdx(index);
+
+        if (scrollTimerRef.current) {
+          clearTimeout(scrollTimerRef.current);
+        }
+
+        scrollTimerRef.current = setTimeout(() => {
+          scrollLockedRef.current = false;
+          setIsScrolling(false);
+        }, 800);
+      };
+
+      if (currentIdx === 1) {
+        if (
+          mainContentRef.current &&
+          mainContentRef.current.scrollTop <= 0 &&
+          delta < 0
+        ) {
+          moveToSection(0);
+        }
+        return;
+      }
+
+      if (delta > 0 && currentIdx < SECTIONS.length - 1) {
+        moveToSection(currentIdx + 1);
+      } else if (delta < 0 && currentIdx > 0) {
+        moveToSection(currentIdx - 1);
+      }
+    },
+    [currentIdx, isAnyModalOpen, isAfterWedding]
+  );
 
   // 모바일 주소창 자동 숨김
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
 
     const hideAddressBar = () => {
-      timers.push(setTimeout(() => {
-        window.scrollTo(0, 1);
-      }, 100));
+      timers.push(
+        setTimeout(() => {
+          window.scrollTo(0, 1);
+        }, 100)
+      );
 
-      timers.push(setTimeout(() => {
-        window.scrollTo(0, 0);
-      }, 300));
+      timers.push(
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+        }, 300)
+      );
     };
 
     hideAddressBar();
@@ -200,32 +208,6 @@ const WeddingApp: React.FC = () => {
     };
   }, [handleScroll, currentIdx, isAfterWedding]);
 
-  // 조작하지 않으면 기존처럼 자동 이동
-  useEffect(() => {
-    if (
-      currentIdx !== 0 ||
-      showOpening ||
-      isAnyModalOpen ||
-      isAfterWedding ||
-      isScrolling
-    ) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      handleScroll(100);
-    }, 3500);
-
-    return () => clearTimeout(timer);
-  }, [
-    currentIdx,
-    showOpening,
-    isAnyModalOpen,
-    isAfterWedding,
-    isScrolling,
-    handleScroll
-  ]);
-
   // PC 마우스 드래그
   useEffect(() => {
     const container = containerRef.current;
@@ -240,7 +222,9 @@ const WeddingApp: React.FC = () => {
       'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
     const handleMouseDown = (event: MouseEvent) => {
-      if (isTouchDevice || isAnyModalOpen || event.button !== 0) return;
+      if (isTouchDevice || isAnyModalOpen || event.button !== 0) {
+        return;
+      }
 
       const target = event.target as HTMLElement;
 
@@ -255,7 +239,6 @@ const WeddingApp: React.FC = () => {
       isDown = true;
       isDraggingAction = false;
       startY = event.clientY;
-
       container.style.cursor = 'grabbing';
 
       if (currentIdx === 1 && mainContentRef.current) {
@@ -271,7 +254,6 @@ const WeddingApp: React.FC = () => {
 
     const handleMouseMove = (event: MouseEvent) => {
       if (!isDown) return;
-
       event.preventDefault();
 
       const deltaY = startY - event.clientY;
@@ -290,7 +272,8 @@ const WeddingApp: React.FC = () => {
       if (!isDown) return;
 
       isDown = false;
-      container.style.cursor = currentIdx === 1 ? 'grab' : 'default';
+      container.style.cursor =
+        currentIdx === 1 ? 'grab' : 'default';
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
 
@@ -314,6 +297,7 @@ const WeddingApp: React.FC = () => {
       container.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
       container.style.cursor = '';
@@ -340,7 +324,8 @@ const WeddingApp: React.FC = () => {
           <OpeningSequence onComplete={finishOpening} />
         )}
 
-        <ForsythiaParticles />
+        {/* 눈송이 효과 */}
+        <SnowParticles />
 
         {showBrowserPrompt && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-[9999]">
@@ -383,21 +368,35 @@ const WeddingApp: React.FC = () => {
           </div>
         )}
 
-        <div
-          key={SECTIONS[currentIdx]}
-          className="h-full w-full"
-        >
-          {currentIdx === 0 && (
-            <Hero startAnimation={!showOpening} />
-          )}
+        {/* 첫 화면과 본문 사이의 부드러운 전환 */}
+        <AnimatePresence initial={false}>
+          <motion.div
+            key={SECTIONS[currentIdx]}
+            className="absolute inset-0 h-full w-full bg-[#f8f8f8]"
+            initial={{
+              y: currentIdx === 1 ? '100%' : '-100%'
+            }}
+            animate={{ y: 0 }}
+            exit={{
+              y: currentIdx === 0 ? '-100%' : '100%'
+            }}
+            transition={{
+              duration: 0.75,
+              ease: [0.22, 1, 0.36, 1]
+            }}
+          >
+            {currentIdx === 0 && (
+              <Hero startAnimation={!showOpening} />
+            )}
 
-          {currentIdx === 1 && (
-            <MainContent
-              ref={mainContentRef}
-              onModalStateChange={setIsAnyModalOpen}
-            />
-          )}
-        </div>
+            {currentIdx === 1 && (
+              <MainContent
+                ref={mainContentRef}
+                onModalStateChange={setIsAnyModalOpen}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
 
         {currentIdx >= 1 && <ShareButton />}
       </div>
@@ -407,7 +406,8 @@ const WeddingApp: React.FC = () => {
 
 const App: React.FC = () => {
   const isAdminMode =
-    new URLSearchParams(window.location.search).get('admin') === 'true';
+    new URLSearchParams(window.location.search).get('admin') ===
+    'true';
 
   return isAdminMode ? <AdminPage /> : <WeddingApp />;
 };

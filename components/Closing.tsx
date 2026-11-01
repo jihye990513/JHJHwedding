@@ -5,23 +5,25 @@ import { weddingData } from '@/data/content';
 
 const Closing: React.FC = () => {
     return (
-        <section className="relative w-full h-[300px] overflow-hidden flex items-end justify-center bg-white-100 pb-10">
+        <section className="relative w-full h-[300px] overflow-hidden flex items-end justify-center bg-white pb-28">
             {/* 배경 이미지 */}
             <div
                 className="absolute inset-0"
                 style={{
-                    maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)'
+                    maskImage:
+                        'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)',
+                    WebkitMaskImage:
+                        'linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)'
                 }}
             >
                 <img
                     src={loadImage(weddingData.closing.image)}
-                    alt="Closing"
+                    alt="마무리 사진"
                     className="w-full h-full object-cover opacity-50"
                 />
             </div>
 
-            {/* 텍스트 오버레이 */}
+            {/* 감사 문구 */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}

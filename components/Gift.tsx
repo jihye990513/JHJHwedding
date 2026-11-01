@@ -27,7 +27,7 @@ const AccountCard: React.FC<{
 			if (navigator.clipboard && navigator.clipboard.writeText) {
 				await navigator.clipboard.writeText(account.num);
 			} else {
-				// Fallback for older browsers or non-HTTPS environments
+				// 이전 브라우저용 복사 기능
 				const textArea = document.createElement('textarea');
 				textArea.value = account.num;
 				textArea.style.position = 'fixed';
@@ -38,6 +38,7 @@ const AccountCard: React.FC<{
 				document.execCommand('copy');
 				document.body.removeChild(textArea);
 			}
+
 			showToast(toastMessage);
 		} catch (error) {
 			console.error('Copy failed:', error);
@@ -51,7 +52,9 @@ const AccountCard: React.FC<{
 		<div className="min-w-full bg-white rounded-3xl p-6 shadow-md border border-gray-100/50">
 			{/* 이름 */}
 			<div className="text-center mb-5">
-				<p className="text-base font-medium text-gray-800">{account.name}</p>
+				<p className="text-base font-medium text-gray-800">
+					{account.name}
+				</p>
 			</div>
 
 			{/* 은행명 + 계좌번호 */}
@@ -64,9 +67,14 @@ const AccountCard: React.FC<{
 							className="w-5 h-5 object-contain rounded"
 						/>
 					)}
-					<span className="text-xs text-gray-700 font-medium">{account.bank}</span>
+					<span className="text-xs text-gray-700 font-medium">
+						{account.bank}
+					</span>
 				</div>
-				<span className="font-mono text-xs text-gray-700">{account.num}</span>
+
+				<span className="font-mono text-xs text-gray-700">
+					{account.num}
+				</span>
 			</div>
 
 			{/* 복사하기 버튼 */}
@@ -75,7 +83,9 @@ const AccountCard: React.FC<{
 				className="w-full py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 interactive"
 			>
 				<i className="fa-regular fa-copy text-gray-600 text-xs"></i>
-				<span className="text-xs text-gray-700 font-medium">{copyButtonText}</span>
+				<span className="text-xs text-gray-700 font-medium">
+					{copyButtonText}
+				</span>
 			</button>
 		</div>
 	);
@@ -88,6 +98,7 @@ const Gift: React.FC = () => {
 
 	const showToast = (message: string) => {
 		setToast({ show: true, message });
+
 		setTimeout(() => {
 			setToast({ show: false, message: '' });
 		}, 2000);
@@ -95,8 +106,8 @@ const Gift: React.FC = () => {
 
 	const groomAccounts = weddingData.gift.accounts.groom;
 	const brideAccounts = weddingData.gift.accounts.bride;
-
-	const currentAccounts = activeTab === 'groom' ? groomAccounts : brideAccounts;
+	const currentAccounts =
+		activeTab === 'groom' ? groomAccounts : brideAccounts;
 
 	return (
 		<div className="h-full w-full flex flex-col items-center bg-[#f8f8f8] px-8 pb-12 overflow-y-auto overflow-x-hidden no-scrollbar">
@@ -108,9 +119,16 @@ const Gift: React.FC = () => {
 			>
 				{/* 헤더 */}
 				<div className="text-center pt-8 pb-10">
-					<p className="text-[10px] font-joseon text-gray-400 tracking-[0.4em] uppercase mb-1">{weddingData.gift.label}</p>
-					<h2 className="text-2xl font-myeongjo text-gray-800 mb-6 leading-tight">{weddingData.gift.title}</h2>
+					<p className="text-[10px] font-joseon text-gray-400 tracking-[0.4em] uppercase mb-1">
+						{weddingData.gift.label}
+					</p>
+
+					<h2 className="text-2xl font-myeongjo text-gray-800 mb-6 leading-tight">
+						{weddingData.gift.title}
+					</h2>
+
 					<div className="w-8 h-[1px] bg-gray-200 mx-auto mb-8"></div>
+
 					<p className="text-[13px] font-gowoon text-gray-500 leading-relaxed whitespace-pre-line">
 						{weddingData.gift.subtitle}
 					</p>
@@ -120,32 +138,38 @@ const Gift: React.FC = () => {
 				<div className="flex gap-2 mb-10 bg-gray-100/80 p-2 rounded-full">
 					<button
 						onClick={() => setActiveTab('groom')}
-						className={`flex-1 py-3.5 rounded-full text-sm font-medium transition-all ${activeTab === 'groom'
-							? 'bg-white text-gray-800 shadow-md'
-							: 'text-gray-500'
-							}`}
+						className={`flex-1 py-3.5 rounded-full text-sm font-medium transition-all ${
+							activeTab === 'groom'
+								? 'bg-white text-gray-800 shadow-md'
+								: 'text-gray-500'
+						}`}
 					>
 						{weddingData.gift.tabs.groom}
 					</button>
+
 					<button
 						onClick={() => setActiveTab('bride')}
-						className={`flex-1 py-3.5 rounded-full text-sm font-medium transition-all ${activeTab === 'bride'
-							? 'bg-white text-gray-800 shadow-md'
-							: 'text-gray-500'
-							}`}
+						className={`flex-1 py-3.5 rounded-full text-sm font-medium transition-all ${
+							activeTab === 'bride'
+								? 'bg-white text-gray-800 shadow-md'
+								: 'text-gray-500'
+						}`}
 					>
 						{weddingData.gift.tabs.bride}
 					</button>
 				</div>
 
-				{/* 계좌 카드 리스트 (상하 배치) */}
+				{/* 계좌 카드 리스트 */}
 				<div className="flex flex-col gap-4 w-full">
 					{currentAccounts.map((account, index) => (
 						<motion.div
 							key={`${activeTab}-${index}`}
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.3, delay: index * 0.1 }}
+							transition={{
+								duration: 0.3,
+								delay: index * 0.1
+							}}
 							className="w-full"
 						>
 							<AccountCard
@@ -157,9 +181,14 @@ const Gift: React.FC = () => {
 						</motion.div>
 					))}
 				</div>
+
+				{/* 화환 사양 안내 */}
+				<p className="mt-8 text-center text-xs font-gowoon text-gray-500 leading-relaxed whitespace-pre-line">
+					{weddingData.gift.footer}
+				</p>
 			</motion.div>
 
-			{/* Toast Popup */}
+			{/* 복사 알림 */}
 			<AnimatePresence>
 				{toast.show && (
 					<motion.div
@@ -171,10 +200,12 @@ const Gift: React.FC = () => {
 						style={{
 							backgroundColor: 'rgba(0, 0, 0, 0.6)',
 							backdropFilter: 'blur(8px)',
-							WebkitBackdropFilter: 'blur(8px)',
+							WebkitBackdropFilter: 'blur(8px)'
 						}}
 					>
-						<p className="text-white text-xs whitespace-nowrap">{toast.message}</p>
+						<p className="text-white text-xs whitespace-nowrap">
+							{toast.message}
+						</p>
 					</motion.div>
 				)}
 			</AnimatePresence>
