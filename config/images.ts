@@ -31,12 +31,12 @@ export const imageUrls: Record<string, string> = {
     'wedding-81': '/demo-images/hero.png',
     'wedding-98': '/demo-images/gallery1.png',
     'wedding-99': '/demo-images/gallery2.png',
-    'wedding-100': '/demo-images/gallery3.png',
+    'wedding-100': 'https://res.cloudinary.com/bajnfo80/image/upload/f_auto,q_auto/jhjh01',
     'wedding-101': '/demo-images/gallery4.png',
 
     // 카카오톡 공유 카드 썸네일
     // 절대 URL을 넣으면 그대로 쓰고, 상대 경로면 배포 도메인을 앞에 붙입니다.
-    'share': '/demo-images/hero.png',
+    'share': 'https://res.cloudinary.com/bajnfo80/image/upload/f_auto,q_auto/jhjh01',
 
     // 지도/네비게이션 아이콘 (유지)
     'navermap': 'https://res.cloudinary.com/my-wedding/image/upload/v1769862798/fb1eryzvitquqzhyt6gd.webp',
