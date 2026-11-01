@@ -1,5 +1,4 @@
-import React, { forwardRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { forwardRef, useEffect, useRef } from 'react';
 import Intro from './Intro';
 import Profiles from './Profiles';
 import Gallery from './Gallery';
@@ -8,109 +7,136 @@ import Rsvp from './Rsvp';
 import Gift from './Gift';
 import Guestbook from './Guestbook';
 import Closing from './Closing';
-import { weddingData } from '@/data/content';
 
 interface MainContentProps {
     onModalStateChange: (isOpen: boolean) => void;
-    onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
+    onScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
     onActiveSectionChange?: (sectionId: string) => void;
 }
 
-const SECTIONS = ['intro', 'rsvp', 'profiles', 'gallery', 'location', 'gift', 'guestbook'];
+const SECTIONS = [
+    'intro',
+    'rsvp',
+    'profiles',
+    'gallery',
+    'location',
+    'gift',
+    'guestbook'
+];
 
 const SectionDivider = () => (
     <div className="py-28 flex items-center justify-center opacity-30">
         <div className="w-16 h-[1px] bg-[#3c1e1e]" />
-        <div className="mx-2 text-[#3c1e1e] font-serif text-xs">❦</div>
+        <div className="mx-2 text-[#3c1e1e] font-serif text-xs">
+            ❦
+        </div>
         <div className="w-16 h-[1px] bg-[#3c1e1e]" />
     </div>
 );
 
-const MainContent = forwardRef<HTMLDivElement, MainContentProps>(({ onModalStateChange, onScroll, onActiveSectionChange }, ref) => {
-    useEffect(() => {
-        if (!onActiveSectionChange) return;
+const MainContent = forwardRef<HTMLDivElement, MainContentProps>(
+    (
+        {
+            onModalStateChange,
+            onScroll,
+            onActiveSectionChange
+        },
+        forwardedRef
+    ) => {
+        const containerRef = useRef<HTMLDivElement | null>(null);
 
-        const options = {
-            root: (ref as React.RefObject<HTMLDivElement>).current,
-            threshold: 0.1,
-            rootMargin: '-5% 0px -50% 0px'
-        };
+        useEffect(() => {
+            const container = containerRef.current;
 
-        const callback: IntersectionObserverCallback = (entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    onActiveSectionChange(entry.target.id);
+            if (!container || !onActiveSectionChange) return;
+
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            onActiveSectionChange(entry.target.id);
+                        }
+                    });
+                },
+                {
+                    root: container,
+                    threshold: 0.1,
+                    rootMargin: '-5% 0px -50% 0px'
                 }
+            );
+
+            SECTIONS.forEach((sectionId) => {
+                const element = container.querySelector(
+                    `#${sectionId}`
+                );
+
+                if (element) observer.observe(element);
             });
-        };
 
-        const observer = new IntersectionObserver(callback, { ...options, root: null });
+            return () => observer.disconnect();
+        }, [onActiveSectionChange]);
 
-        SECTIONS.forEach((section) => {
-            const element = document.getElementById(section);
-            if (element) observer.observe(element);
-        });
+        return (
+            <div
+                ref={(element) => {
+                    containerRef.current = element;
 
-        return () => observer.disconnect();
-    }, [onActiveSectionChange, ref]);
+                    if (typeof forwardedRef === 'function') {
+                        forwardedRef(element);
+                    } else if (forwardedRef) {
+                        forwardedRef.current = element;
+                    }
+                }}
+                className="h-full w-full overflow-y-auto overflow-x-hidden scroll-smooth bg-[#f8f8f8]"
+                onScroll={onScroll}
+            >
+                <div className="pb-8" />
 
-    return (
-        <div
-            ref={ref}
-            className="h-full w-full overflow-y-auto overflow-x-hidden scroll-smooth bg-[#f8f8f8]"
-            onScroll={onScroll}
-        >
-            <div className="pb-8" />
+                <section id="intro">
+                    <Intro />
+                </section>
 
-            <section id="intro">
-                <Intro />
-            </section>
+                <SectionDivider />
 
-            <SectionDivider />
+                <section id="rsvp">
+                    <Rsvp onModalStateChange={onModalStateChange} />
+                </section>
 
-            <section id="rsvp">
-                <Rsvp onModalStateChange={onModalStateChange} />
-            </section>
+                <SectionDivider />
 
-            <SectionDivider />
+                <section id="profiles">
+                    <Profiles onModalStateChange={onModalStateChange} />
+                </section>
 
-            <section id="profiles">
-                <Profiles onModalStateChange={onModalStateChange} />
-            </section>
+                <SectionDivider />
 
-            <SectionDivider />
+                <section id="gallery">
+                    <Gallery onModalStateChange={onModalStateChange} />
+                </section>
 
-            <section id="gallery">
-                <Gallery onModalStateChange={onModalStateChange} />
-            </section>
+                <SectionDivider />
 
-            <SectionDivider />
+                <section id="location">
+                    <Location />
+                </section>
 
-            <section id="location">
-                <Location />
-            </section>
+                <SectionDivider />
 
-            <SectionDivider />
+                <section id="gift">
+                    <Gift />
+                </section>
 
-            <section id="gift">
-                <Gift />
-            </section>
+                <SectionDivider />
 
-            <SectionDivider />
+                <section id="guestbook">
+                    <Guestbook onModalStateChange={onModalStateChange} />
+                </section>
 
-            <section id="guestbook">
-                <Guestbook onModalStateChange={onModalStateChange} />
-            </section>
-
-            <Closing />
-
-            <div className="h-32 flex flex-col items-center justify-center text-[#3c1e1e]/40 text-[10px] uppercase tracking-widest pb-8 gap-1">
-                <span className="font-joseon opacity-100 text-[12px]">{weddingData.footer.name}</span>
-                <span>{weddingData.footer.copyright}</span>
+                <Closing />
             </div>
-        </div>
-    );
-});
+        );
+    }
+);
 
 MainContent.displayName = 'MainContent';
 
