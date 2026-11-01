@@ -1,645 +1,633 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
 import { useModalBackHandler } from '@/hooks/useModalBackHandler';
-// Firebase 관련 import 제거 및 로컬 데모 환경 구성
 import { weddingData } from '@/data/content';
 
-// Firestore의 Timestamp 대신 사용할 Mock 객체
-class MockTimestamp {
-  date: Date;
-  constructor(date: Date = new Date()) {
-    this.date = date;
-  }
-  toDate() {
-    return this.date;
-  }
-  static now() {
-    return new MockTimestamp();
-  }
-}
-
 interface GuestbookEntry {
-  id: string;
-  name: string;
-  password: string;
-  message: string;
-  createdAt: MockTimestamp;
+    id: string;
+    name: string;
+    message: string;
+    createdAt: string | null;
 }
 
 interface GuestbookProps {
-  onModalStateChange: (isOpen: boolean) => void;
+    onModalStateChange: (isOpen: boolean) => void;
 }
 
-const Guestbook: React.FC<GuestbookProps> = ({ onModalStateChange }) => {
-  const [showWritePopup, setShowWritePopup] = useState(false);
-  const [showEditPopup, setShowEditPopup] = useState(false);
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [entries, setEntries] = useState<GuestbookEntry[]>([
-    {
-      id: 'demo1',
-      name: '홍길동',
-      password: '1234',
-      message: '결혼을 진심으로 축하드립니다. 행복하게 잘 사세요!! 😊',
-      createdAt: new MockTimestamp(new Date(Date.now() - 1000 * 60 * 60 * 24))
-    },
-    {
-      id: 'demo2',
-      name: '이개발',
-      password: '1234',
-      message: '오랜 기간 만나온 두 사람의 앞날에 축복만 가득하길 바랍니다!',
-      createdAt: new MockTimestamp(new Date(Date.now() - 1000 * 60 * 60 * 2))
-    },
-    {
-      id: 'demo3',
-      name: '김친구',
-      password: '1234',
-      message: '정말 예쁜 부부네요! 앞으로도 지금처럼 예쁜 사랑하세요 💖',
-      createdAt: new MockTimestamp(new Date(Date.now() - 1000 * 60 * 30))
-    }
-  ]);
-  const [loading, setLoading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+type PopupMode = 'write' | 'edit' | null;
 
-  // PC Drag-to-Scroll State
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [startScrollTop, setStartScrollTop] = useState(0);
+interface ApiResponse {
+    entries?: GuestbookEntry[];
+    success?: boolean;
+    error?: string;
+}
 
+async function requestGuestbook(
+    payload?: Record<string, unknown>,
+    signal?: AbortSignal
+): Promise<ApiResponse> {
+    const response = await fetch('/api/guestbook', {
+        method: payload ? 'POST' : 'GET',
+        cache: 'no-store',
+        signal,
+        ...(payload
+            ? {
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(payload)
+              }
+            : {})
+    });
 
+    let result: ApiResponse;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-
-    // Ignore interactive elements
-    const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, textarea, [role="button"], .interactive')) {
-      return;
+    try {
+        result = await response.json();
+    } catch {
+        throw new Error(
+            '방명록 서버에 연결하지 못했습니다. 배포 상태를 확인해주세요.'
+        );
     }
 
-    setIsDragging(true);
-    setStartY(e.pageY);
-    setStartScrollTop(containerRef.current.scrollTop);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
-    e.preventDefault();
-    const y = e.pageY;
-    const walk = (y - startY) * 1.5; // Drag speed multiplier
-    containerRef.current.scrollTop = startScrollTop - walk;
-  };
-
-  const handleMouseUpOrLeave = () => {
-    setIsDragging(false);
-  };
-
-  // 스크롤 컨테이너 ref
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // 수정 관련 state
-  const [editingEntry, setEditingEntry] = useState<GuestbookEntry | null>(null);
-  const [editPassword, setEditPassword] = useState('');
-  const [editMessage, setEditMessage] = useState('');
-  const [showPasswordPopup, setShowPasswordPopup] = useState(false);
-
-  // 커스텀 alert 팝업
-  const [alertMessage, setAlertMessage] = useState('');
-  const [showAlert, setShowAlert] = useState(false);
-
-  // [MIG] 통합 뒤로가기 핸들러
-  // 어떤 팝업이든 열려있으면 true
-  const isAnyPopupOpen = showWritePopup || showEditPopup || showPasswordPopup || showAlert;
-
-  useModalBackHandler(isAnyPopupOpen, () => {
-    // 열려있는 순서대로 닫기 (우선순위가 있다면 조정)
-    if (showAlert) {
-      setShowAlert(false);
-      return;
+    if (!response.ok) {
+        throw new Error(
+            result.error || '요청을 처리하지 못했습니다.'
+        );
     }
-    if (showPasswordPopup) {
-      setShowPasswordPopup(false);
-      setEditingEntry(null);
-      setEditPassword('');
-      return;
-    }
-    if (showEditPopup) {
-      setShowEditPopup(false);
-      return;
-    }
-    if (showWritePopup) {
-      setShowWritePopup(false);
-      return;
-    }
-  });
 
-  // 커스텀 alert 함수
-  const showCustomAlert = (message: string) => {
-    setAlertMessage(message);
-    setShowAlert(true);
-  };
+    return result;
+}
 
-  // 실시간 방명록 불러오기 (데모에서는 초기 더미 데이터로 대체)
-  useEffect(() => {
-    // 아무 작업 안함 (더미 데이터 사용)
-  }, []);
+function formatDate(value: string | null) {
+    if (!value) return '';
 
-  // 스크롤 이벤트 제어
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const date = new Date(value);
 
-    const handleWheel = (e: WheelEvent) => {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      const isScrollDown = e.deltaY > 0;
-      const isScrollUp = e.deltaY < 0;
+    if (Number.isNaN(date.getTime())) return '';
 
-      const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 1;
-      const isAtTop = scrollTop <= 0;
+    return date.toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+}
 
-      if ((isScrollDown && !isAtBottom) || (isScrollUp && !isAtTop)) {
-        e.stopPropagation();
-      }
+const Guestbook: React.FC<GuestbookProps> = ({
+    onModalStateChange
+}) => {
+    const [entries, setEntries] = useState<GuestbookEntry[]>([]);
+    const [listLoading, setListLoading] = useState(true);
+    const [listError, setListError] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(3);
+
+    const [popupMode, setPopupMode] = useState<PopupMode>(null);
+    const [editingEntry, setEditingEntry] =
+        useState<GuestbookEntry | null>(null);
+
+    const [name, setName] = useState('');
+    const [password, setPassword] = useState('');
+    const [message, setMessage] = useState('');
+    const [formError, setFormError] = useState('');
+    const [notice, setNotice] = useState('');
+
+    const isPopupOpen = popupMode !== null;
+
+    const closePopup = () => {
+        if (busy) return;
+
+        setPopupMode(null);
+        setEditingEntry(null);
+        setName('');
+        setPassword('');
+        setMessage('');
+        setFormError('');
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, []);
+    useModalBackHandler(isPopupOpen, closePopup);
 
-  // 방명록 작성
-  const handleSubmit = async () => {
-    if (!name.trim()) {
-      showCustomAlert(weddingData.guestbook.alert.name);
-      return;
-    }
-    if (!password.trim() || password.length !== 4 || !/^\d{4}$/.test(password)) {
-      showCustomAlert(weddingData.guestbook.alert.password);
-      return;
-    }
-    if (!message.trim()) {
-      showCustomAlert(weddingData.guestbook.alert.message);
-      return;
-    }
-    if (message.length > 300) {
-      showCustomAlert(weddingData.guestbook.alert.length);
-      return;
-    }
+    useEffect(() => {
+        onModalStateChange(isPopupOpen);
 
-    setLoading(true);
-    try {
-      // 로컬 상태로 로직 대체 (Mock)
-      const newEntry: GuestbookEntry = {
-        id: `demo_new_${Date.now()}`,
-        name: name.trim(),
-        password: password,
-        message: message.trim(),
-        createdAt: MockTimestamp.now()
-      };
-      
-      setEntries([newEntry, ...entries]);
+        return () => {
+            onModalStateChange(false);
+        };
+    }, [isPopupOpen, onModalStateChange]);
 
-      setName('');
-      setPassword('');
-      setMessage('');
-      setShowWritePopup(false);
-      showCustomAlert(weddingData.guestbook.success.create);
-    } catch (error: any) {
-      showCustomAlert(`${weddingData.guestbook.alert.fail}\n${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+    useEffect(() => {
+        if (!isPopupOpen) return;
 
-  // Edit 버튼 클릭
-  const handleEditClick = (entry: GuestbookEntry) => {
-    setEditingEntry(entry);
-    setEditPassword('');
-    setShowPasswordPopup(true);
-  };
+        const preventBackgroundScroll = (event: Event) => {
+            const target = event.target;
 
-  // 비밀번호 확인
-  const handlePasswordVerify = () => {
-    if (!editPassword.trim() || editPassword.length !== 4 || !/^\d{4}$/.test(editPassword)) {
-      showCustomAlert(weddingData.guestbook.alert.password);
-      return;
-    }
-    if (!editingEntry) return;
+            if (
+                target instanceof Element &&
+                target.closest('[data-guestbook-dialog]')
+            ) {
+                return;
+            }
 
-    if (editPassword !== editingEntry.password) {
-      showCustomAlert(weddingData.guestbook.alert.passwordMismatch);
-      setEditPassword('');
-      return;
-    }
+            event.preventDefault();
+        };
 
-    setEditMessage(editingEntry.message);
-    setShowPasswordPopup(false);
-    setShowEditPopup(true);
-  };
+        window.addEventListener(
+            'wheel',
+            preventBackgroundScroll,
+            { passive: false }
+        );
 
-  // 수정 처리
-  const handleEdit = async () => {
-    if (!editingEntry) return;
-    if (!editMessage.trim()) {
-      showCustomAlert(weddingData.guestbook.alert.message);
-      return;
-    }
-    if (editMessage.length > 300) {
-      showCustomAlert(weddingData.guestbook.alert.length);
-      return;
-    }
+        window.addEventListener(
+            'touchmove',
+            preventBackgroundScroll,
+            { passive: false }
+        );
 
-    setLoading(true);
-    try {
-      setEntries(entries.map(e => 
-        e.id === editingEntry.id ? { ...e, message: editMessage.trim() } : e
-      ));
+        return () => {
+            window.removeEventListener(
+                'wheel',
+                preventBackgroundScroll
+            );
 
-      setEditingEntry(null);
-      setEditPassword('');
-      setEditMessage('');
-      setShowEditPopup(false);
-      showCustomAlert(weddingData.guestbook.success.update);
-    } catch (error: any) {
-      showCustomAlert(`${weddingData.guestbook.alert.fail}\n${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+            window.removeEventListener(
+                'touchmove',
+                preventBackgroundScroll
+            );
+        };
+    }, [isPopupOpen]);
 
-  // 팝업 오픈 시 배경 스크롤 잠금
-  useEffect(() => {
-    const isAnyPopupOpen = showWritePopup || showEditPopup || showPasswordPopup || showAlert;
-    if (isAnyPopupOpen) {
-      document.body.style.overflow = 'hidden';
-      onModalStateChange(true);
-    } else {
-      document.body.style.overflow = '';
-      onModalStateChange(false);
-    }
-    return () => {
-      document.body.style.overflow = '';
-      onModalStateChange(false);
+    useEffect(() => {
+        const controller = new AbortController();
+
+        requestGuestbook(undefined, controller.signal)
+            .then((result) => {
+                setEntries(result.entries || []);
+            })
+            .catch((error: unknown) => {
+                if (controller.signal.aborted) return;
+
+                setListError(
+                    error instanceof Error
+                        ? error.message
+                        : '방명록을 불러오지 못했습니다.'
+                );
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setListLoading(false);
+                }
+            });
+
+        return () => controller.abort();
+    }, []);
+
+    const refreshEntries = async () => {
+        setListError('');
+
+        try {
+            const result = await requestGuestbook();
+            setEntries(result.entries || []);
+        } catch (error) {
+            setListError(
+                error instanceof Error
+                    ? error.message
+                    : '목록을 불러오지 못했습니다.'
+            );
+        }
     };
-  }, [showWritePopup, showEditPopup, showPasswordPopup, showAlert, onModalStateChange]);
 
-  return (
-    <div
-      ref={containerRef}
-      className={`relative h-full w-full flex flex-col items-center bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-20 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUpOrLeave}
-      onMouseLeave={handleMouseUpOrLeave}
-      onTouchStart={(e) => {
-        const container = containerRef.current;
-        if (!container) return;
-        const { scrollTop, scrollHeight, clientHeight } = container;
-        const isAtTop = scrollTop <= 0;
-        const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 2;
-        if (!isAtTop && !isAtBottom) {
-          e.stopPropagation();
+    const openWritePopup = () => {
+        setEditingEntry(null);
+        setName('');
+        setPassword('');
+        setMessage('');
+        setFormError('');
+        setNotice('');
+        setPopupMode('write');
+    };
+
+    const openEditPopup = (entry: GuestbookEntry) => {
+        setEditingEntry(entry);
+        setName(entry.name);
+        setPassword('');
+        setMessage(entry.message);
+        setFormError('');
+        setNotice('');
+        setPopupMode('edit');
+    };
+
+    const handleSave = async (
+        event: React.FormEvent<HTMLFormElement>
+    ) => {
+        event.preventDefault();
+
+        if (busy) return;
+
+        const trimmedName = name.trim();
+        const trimmedMessage = message.trim();
+
+        if (!trimmedName || trimmedName.length > 30) {
+            setFormError('이름은 1~30자로 입력해주세요.');
+            return;
         }
-      }}
-      onTouchMove={(e) => {
-        e.stopPropagation();
-      }}
-      onTouchEnd={(e) => {
-        const container = containerRef.current;
-        if (!container) return;
-        const { scrollTop, scrollHeight, clientHeight } = container;
-        const isAtTop = scrollTop <= 0;
-        const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 2;
-        if (!isAtTop && !isAtBottom) {
-          e.stopPropagation();
+
+        if (!/^\d{4}$/.test(password)) {
+            setFormError('비밀번호는 숫자 4자리로 입력해주세요.');
+            return;
         }
-      }}
-    >
-      {/* 헤더 섹션 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        viewport={{ once: true }}
-        className="text-center pt-8 pb-10 px-6 shrink-0"
-      >
-        <p className="text-[10px] font-joseon text-gray-400 tracking-[0.4em] uppercase mb-1">{weddingData.guestbook.label}</p>
-        <h2 className="text-2xl font-myeongjo text-gray-800 mb-6 leading-tight">{weddingData.guestbook.title}</h2>
-        <div className="w-8 h-[1px] bg-gray-200 mx-auto mb-8"></div>
-        <p className="text-sm font-gowoon text-gray-500">{weddingData.guestbook.subtitle}</p>
-      </motion.div>
 
-      {/* 방명록 목록 */}
-      <div className="w-full max-w-sm px-6 space-y-4 pb-12">
-        {entries.length > 0 ? (
-          <>
-            {(isExpanded ? entries : entries.slice(0, 4)).map((entry, index) => {
-              const isPeekItem = !isExpanded && index === 3;
-              return (
-                <motion.div
-                  key={entry.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  viewport={{ once: true }}
-                  className={`relative bg-white rounded-2xl p-6 shadow-md border border-gray-50/50`}
-                >
-                  {isPeekItem && (
-                    <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent via-white/80 to-white z-10" />
-                  )}
-                  {/* 수정 버튼 (아이콘) */}
-                  <button
-                    onClick={() => handleEditClick(entry)}
-                    className="absolute top-4 right-4 text-gray-300 hover:text-gray-500 transition-colors"
-                  >
-                    <i className="fa-solid fa-xmark text-sm"></i>
-                  </button>
+        if (!trimmedMessage || trimmedMessage.length > 200) {
+            setFormError('메시지는 1~200자로 입력해주세요.');
+            return;
+        }
 
-                  {/* 메시지 본문 */}
-                  <p className="text-[14px] leading-relaxed text-gray-700 font-nanumsquare mb-6 whitespace-pre-wrap break-words">
-                    {entry.message}
-                  </p>
+        if (popupMode === 'edit' && !editingEntry) return;
 
-                  {/* 하단 정보 */}
-                  <div className="flex justify-between items-center text-[11px] font-nanumsquare">
-                    <span className="text-gray-400">From {entry.name}</span>
-                    <span className="text-gray-300">
-                      {entry.createdAt ? (
-                        entry.createdAt.toDate().toLocaleDateString('ko-KR') + ' ' +
-                        entry.createdAt.toDate().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
-                      ) : ''}
-                    </span>
-                  </div>
-                </motion.div>
-              );
-            })}
+        setBusy(true);
+        setFormError('');
 
-            {!isExpanded && entries.length > 3 && (
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onClick={() => setIsExpanded(true)}
-                className="w-full flex items-center gap-3 py-6 group -mt-16 relative z-20"
-              >
-                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-gray-900/20 to-transparent group-hover:via-gray-900/40 transition-all" />
-                <span className="text-xs font-nanumsquare text-gray-400 group-hover:text-gray-600 transition-colors">
-                  {weddingData.guestbook.loadMore}
-                </span>
-                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-gray-900/20 to-transparent group-hover:via-gray-900/40 transition-all" />
-              </motion.button>
-            )}
+        try {
+            const isEditing = popupMode === 'edit';
 
-            {isExpanded && (
-              <div className="space-y-4 pt-4">
-                <motion.button
-                  key="fold-btn-static"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => {
-                    setIsExpanded(false);
-                    // 접었을 때 상단으로 스크롤 이동
-                    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="w-full flex items-center gap-3 py-4 group"
-                >
-                  <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-gray-900/20 to-transparent group-hover:via-gray-900/40 transition-all" />
-                  <span className="text-xs font-nanumsquare text-gray-400 group-hover:text-gray-600 transition-colors">
-                    {weddingData.guestbook.fold}
-                  </span>
-                  <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-gray-900/20 to-transparent group-hover:via-gray-900/40 transition-all" />
-                </motion.button>
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-center text-gray-400 text-xs py-10 font-gowoon">{weddingData.guestbook.empty}</p>
-        )}
+            await requestGuestbook({
+                action: isEditing ? 'update' : 'create',
+                ...(isEditing
+                    ? { id: editingEntry!.id }
+                    : { name: trimmedName }),
+                password,
+                message: trimmedMessage
+            });
 
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowWritePopup(true);
-          }}
-          onTouchEnd={(e) => {
-            e.stopPropagation();
-          }}
-          className="w-full py-4 bg-[#8E8E8E] text-white rounded-xl text-sm font-nanumsquare hover:bg-[#7a7a7a] transition-all shadow-lg active:scale-95 z-30 relative interactive"
-        >
-          {weddingData.guestbook.button}
-        </motion.button>
-      </div>
+            setPopupMode(null);
+            setEditingEntry(null);
+            setName('');
+            setPassword('');
+            setMessage('');
 
-      {/* 작성 팝업 */}
-      <AnimatePresence>
-        {showWritePopup && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowWritePopup(false)}
-              className="absolute inset-0 bg-black/40"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="w-full max-w-sm bg-white rounded-3xl p-8 space-y-6 z-10 shadow-2xl relative"
-            >
-              <button
-                onClick={() => setShowWritePopup(false)}
-                className="absolute top-6 right-6 text-gray-400"
-              >
-                <i className="fa-solid fa-xmark text-lg"></i>
-              </button>
+            setNotice(
+                isEditing
+                    ? '방명록을 수정했습니다.'
+                    : '축하 메시지를 남겼습니다.'
+            );
 
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-myeongjo text-gray-800">{weddingData.guestbook.write.title}</h3>
-                <p className="text-xs font-gowoon text-gray-500">{weddingData.guestbook.write.subtitle}</p>
-              </div>
+            await refreshEntries();
+        } catch (error) {
+            setFormError(
+                error instanceof Error
+                    ? error.message
+                    : '저장하지 못했습니다.'
+            );
+        } finally {
+            setBusy(false);
+        }
+    };
 
-              <div className="space-y-4 pt-4">
-                <input
-                  type="text"
-                  placeholder={weddingData.guestbook.write.placeholder.name}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#fcfcfc] border border-gray-100 rounded-xl p-4 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all placeholder:text-gray-300 font-nanumsquare shadow-inner"
-                />
-                <input
-                  type="password"
-                  placeholder={weddingData.guestbook.write.placeholder.password}
-                  value={password}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                    setPassword(value);
-                  }}
-                  maxLength={4}
-                  inputMode="numeric"
-                  className="w-full bg-[#fcfcfc] border border-gray-100 rounded-xl p-4 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all placeholder:text-gray-300 font-nanumsquare shadow-inner"
-                />
-                <textarea
-                  placeholder={weddingData.guestbook.write.placeholder.message}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value.slice(0, 200))}
-                  maxLength={200}
-                  className="w-full h-40 bg-[#fcfcfc] border border-gray-100 rounded-xl p-4 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all placeholder:text-gray-300 font-nanumsquare resize-none shadow-inner"
-                />
-              </div>
+    const handleDelete = async () => {
+        if (busy || !editingEntry) return;
 
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full py-4 bg-[#8E8E8E] text-white rounded-xl text-sm font-nanumsquare font-bold hover:bg-[#7a7a7a] transition-all disabled:opacity-50"
-              >
-                {loading ? weddingData.guestbook.write.submit.loading : weddingData.guestbook.write.submit.default}
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        if (!/^\d{4}$/.test(password)) {
+            setFormError(
+                '작성할 때 정한 숫자 4자리 비밀번호를 입력해주세요.'
+            );
+            return;
+        }
 
-      {/* 비밀번호 확인 팝업 */}
-      <AnimatePresence>
-        {showPasswordPopup && editingEntry && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setShowPasswordPopup(false);
-                setEditingEntry(null);
-                setEditPassword('');
-              }}
-              className="absolute inset-0 bg-black/40"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-xs bg-white rounded-2xl p-8 space-y-6 z-10 shadow-2xl"
-            >
-              <h3 className="text-center font-myeongjo text-lg text-gray-800">{weddingData.guestbook.password.title}</h3>
-              <input
-                type="password"
-                placeholder={weddingData.guestbook.password.placeholder}
-                value={editPassword}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                  setEditPassword(value);
-                }}
-                maxLength={4}
-                autoFocus
-                className="w-full bg-[#f8f8f8] border border-gray-100 rounded-xl p-4 text-center text-sm font-nanumsquare focus:outline-none"
-              />
-              <div className="flex gap-2">
+        if (!window.confirm('이 방명록을 삭제할까요?')) return;
+
+        setBusy(true);
+        setFormError('');
+
+        try {
+            await requestGuestbook({
+                action: 'delete',
+                id: editingEntry.id,
+                password
+            });
+
+            setEntries((previous) =>
+                previous.filter(
+                    (entry) => entry.id !== editingEntry.id
+                )
+            );
+
+            setPopupMode(null);
+            setEditingEntry(null);
+            setPassword('');
+            setMessage('');
+            setName('');
+            setNotice('방명록을 삭제했습니다.');
+        } catch (error) {
+            setFormError(
+                error instanceof Error
+                    ? error.message
+                    : '삭제하지 못했습니다.'
+            );
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="relative w-full flex flex-col items-center bg-white pb-20">
+            <div className="text-center pt-8 pb-10 px-6">
+                <p className="text-[10px] font-joseon text-gray-400 tracking-[0.4em] uppercase mb-1">
+                    {weddingData.guestbook.label}
+                </p>
+
+                <h2 className="text-2xl font-myeongjo text-gray-800 mb-6">
+                    {weddingData.guestbook.title}
+                </h2>
+
+                <div className="w-8 h-[1px] bg-gray-200 mx-auto mb-8" />
+
+                <p className="text-sm font-gowoon text-gray-500">
+                    {weddingData.guestbook.subtitle}
+                </p>
+            </div>
+
+            <div className="w-full max-w-sm px-6 space-y-4">
+                {notice && (
+                    <p
+                        role="status"
+                        className="text-center text-sm text-gray-600 py-3"
+                    >
+                        {notice}
+                    </p>
+                )}
+
+                {listLoading ? (
+                    <p className="text-center text-gray-400 text-sm py-8">
+                        방명록을 불러오는 중입니다.
+                    </p>
+                ) : listError ? (
+                    <div
+                        role="alert"
+                        className="text-center space-y-3 py-6"
+                    >
+                        <p className="text-sm text-red-600">
+                            {listError}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={refreshEntries}
+                            className="text-sm text-gray-600 underline"
+                        >
+                            다시 불러오기
+                        </button>
+                    </div>
+                ) : entries.length === 0 ? (
+                    <p className="text-center text-gray-400 text-sm py-8 font-gowoon">
+                        첫 번째 축하 메시지를 남겨주세요.
+                    </p>
+                ) : (
+                    entries
+                        .slice(0, visibleCount)
+                        .map((entry) => (
+                            <div
+                                key={entry.id}
+                                className="bg-white rounded-2xl p-6 shadow-md border border-gray-100"
+                            >
+                                <p className="text-[14px] leading-relaxed text-gray-700 font-nanumsquare mb-6 whitespace-pre-wrap break-words">
+                                    {entry.message}
+                                </p>
+
+                                <div className="flex justify-between items-center gap-2 text-[11px] font-nanumsquare">
+                                    <span className="text-gray-500 break-all">
+                                        From {entry.name}
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            openEditPopup(entry)
+                                        }
+                                        className="text-gray-500 underline shrink-0"
+                                    >
+                                        수정·삭제
+                                    </button>
+                                </div>
+
+                                <p className="text-[10px] text-gray-400 mt-3">
+                                    {formatDate(entry.createdAt)}
+                                </p>
+                            </div>
+                        ))
+                )}
+
+                {entries.length > visibleCount && (
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setVisibleCount(
+                                (previous) => previous + 10
+                            )
+                        }
+                        className="w-full py-3 text-xs text-gray-500"
+                    >
+                        더 보기
+                    </button>
+                )}
+
+                {visibleCount > 3 && entries.length > 3 && (
+                    <button
+                        type="button"
+                        onClick={() => setVisibleCount(3)}
+                        className="w-full py-3 text-xs text-gray-500"
+                    >
+                        접기
+                    </button>
+                )}
+
                 <button
-                  onClick={() => {
-                    setShowPasswordPopup(false);
-                    setEditingEntry(null);
-                    setEditPassword('');
-                  }}
-                  className="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl text-xs font-nanumsquare"
+                    type="button"
+                    onClick={openWritePopup}
+                    className="w-full py-4 bg-[#8E8E8E] text-white rounded-xl text-sm font-nanumsquare hover:bg-[#7a7a7a] shadow-lg interactive"
                 >
-                  {weddingData.guestbook.password.cancel}
+                    {weddingData.guestbook.button}
                 </button>
-                <button
-                  onClick={handlePasswordVerify}
-                  className="flex-1 py-3 bg-[#8E8E8E] text-white rounded-xl text-xs font-nanumsquare font-bold"
+            </div>
+
+            {isPopupOpen && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+                    onTouchStart={(event) =>
+                        event.stopPropagation()
+                    }
+                    onTouchEnd={(event) =>
+                        event.stopPropagation()
+                    }
+                    onWheel={(event) =>
+                        event.stopPropagation()
+                    }
                 >
-                  {weddingData.guestbook.password.confirm}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                    <div
+                        className="absolute inset-0 bg-black/50"
+                        onClick={closePopup}
+                    />
 
-      {/* 수정 팝업 */}
-      <AnimatePresence>
-        {showEditPopup && editingEntry && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowEditPopup(false)}
-              className="absolute inset-0 bg-black/40"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-sm bg-white rounded-3xl p-8 space-y-6 z-10 shadow-2xl relative"
-            >
-              <button
-                onClick={() => setShowEditPopup(false)}
-                className="absolute top-6 right-6 text-gray-400"
-              >
-                <i className="fa-solid fa-xmark text-lg"></i>
-              </button>
+                    <div
+                        data-guestbook-dialog
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="guestbook-dialog-title"
+                        className="relative z-10 w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl overflow-y-auto overscroll-contain"
+                        style={{
+                            maxHeight: '85dvh',
+                            WebkitOverflowScrolling: 'touch'
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onClick={closePopup}
+                            disabled={busy}
+                            aria-label="방명록 창 닫기"
+                            className="absolute top-5 right-5 text-gray-500 text-xl disabled:opacity-40"
+                        >
+                            ×
+                        </button>
 
-              <h3 className="text-center font-myeongjo text-xl text-gray-800">{weddingData.guestbook.edit.title}</h3>
+                        <h3
+                            id="guestbook-dialog-title"
+                            className="text-center text-xl font-myeongjo text-gray-800 mb-3"
+                        >
+                            {popupMode === 'write'
+                                ? '축하 메시지 남기기'
+                                : '방명록 수정·삭제'}
+                        </h3>
 
-              <div className="space-y-4 pt-4">
-                <div className="px-4 py-2 bg-gray-50 rounded-lg text-xs font-nanumsquare text-gray-400">
-                  작성자: {editingEntry.name}
+                        <p className="text-center text-xs text-gray-500 mb-6 leading-relaxed">
+                            {popupMode === 'write'
+                                ? '이름과 메시지는 다른 방문자에게도 공개됩니다.'
+                                : '작성할 때 정한 비밀번호를 입력해주세요.'}
+                        </p>
+
+                        <form
+                            onSubmit={handleSave}
+                            className="space-y-4"
+                        >
+                            <div>
+                                <label
+                                    htmlFor="guestbook-name"
+                                    className="block text-xs text-gray-600 mb-2"
+                                >
+                                    이름
+                                </label>
+
+                                <input
+                                    id="guestbook-name"
+                                    type="text"
+                                    value={name}
+                                    onChange={(event) =>
+                                        setName(event.target.value)
+                                    }
+                                    maxLength={30}
+                                    readOnly={popupMode === 'edit'}
+                                    disabled={busy}
+                                    required
+                                    className="w-full border border-gray-200 rounded-xl p-3 text-sm text-gray-800 read-only:bg-gray-100"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="guestbook-password"
+                                    className="block text-xs text-gray-600 mb-2"
+                                >
+                                    비밀번호 · 숫자 4자리
+                                </label>
+
+                                <input
+                                    id="guestbook-password"
+                                    type="password"
+                                    inputMode="numeric"
+                                    autoComplete={
+                                        popupMode === 'write'
+                                            ? 'new-password'
+                                            : 'current-password'
+                                    }
+                                    value={password}
+                                    onChange={(event) =>
+                                        setPassword(
+                                            event.target.value
+                                                .replace(/\D/g, '')
+                                                .slice(0, 4)
+                                        )
+                                    }
+                                    maxLength={4}
+                                    disabled={busy}
+                                    required
+                                    className="w-full border border-gray-200 rounded-xl p-3 text-sm text-gray-800"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="guestbook-message"
+                                    className="block text-xs text-gray-600 mb-2"
+                                >
+                                    축하 메시지
+                                </label>
+
+                                <textarea
+                                    id="guestbook-message"
+                                    value={message}
+                                    onChange={(event) =>
+                                        setMessage(
+                                            event.target.value
+                                        )
+                                    }
+                                    maxLength={200}
+                                    disabled={busy}
+                                    required
+                                    rows={5}
+                                    className="w-full border border-gray-200 rounded-xl p-3 text-sm text-gray-800 resize-none"
+                                />
+
+                                <p className="text-right text-xs text-gray-400 mt-1">
+                                    {message.length}/200
+                                </p>
+                            </div>
+
+                            {formError && (
+                                <p
+                                    role="alert"
+                                    className="text-sm text-red-600 leading-relaxed"
+                                >
+                                    {formError}
+                                </p>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={busy}
+                                className="w-full py-4 bg-[#8E8E8E] text-white rounded-xl text-sm disabled:opacity-50"
+                            >
+                                {busy
+                                    ? '처리 중…'
+                                    : popupMode === 'write'
+                                      ? '메시지 남기기'
+                                      : '수정 저장'}
+                            </button>
+
+                            {popupMode === 'edit' && (
+                                <button
+                                    type="button"
+                                    onClick={handleDelete}
+                                    disabled={busy}
+                                    className="w-full py-3 border border-red-200 text-red-600 rounded-xl text-sm disabled:opacity-50"
+                                >
+                                    이 글 삭제
+                                </button>
+                            )}
+                        </form>
+                    </div>
                 </div>
-                <textarea
-                  value={editMessage}
-                  onChange={(e) => setEditMessage(e.target.value.slice(0, 200))}
-                  maxLength={200}
-                  className="w-full h-40 bg-[#fcfcfc] border border-gray-100 rounded-xl p-4 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all font-nanumsquare resize-none"
-                />
-              </div>
-
-              <button
-                onClick={handleEdit}
-                disabled={loading}
-                className="w-full py-4 bg-[#8E8E8E] text-white rounded-xl text-sm font-nanumsquare font-bold hover:bg-[#7a7a7a] transition-all"
-              >
-                {loading ? weddingData.guestbook.edit.submit.loading : weddingData.guestbook.edit.submit.default}
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 커스텀 Alert */}
-      <AnimatePresence>
-        {showAlert && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAlert(false)}
-              className="absolute inset-0 bg-black/40"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-[280px] bg-white rounded-2xl p-6 text-center z-10 shadow-2xl"
-            >
-              <p className="text-gray-800 text-sm font-nanumsquare mb-6 leading-relaxed whitespace-pre-line">
-                {alertMessage}
-              </p>
-              <button
-                onClick={() => setShowAlert(false)}
-                className="w-full py-3 bg-gray-800 text-white rounded-xl font-bold text-xs"
-              >
-                {weddingData.guestbook.password.confirm}
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+            )}
+        </div>
+    );
 };
 
 export default Guestbook;
