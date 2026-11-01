@@ -26,7 +26,7 @@ const Location: React.FC = () => {
     // 환경변수 가져오기 및 공백 제거
     const envClientId = import.meta.env.VITE_NAVER_MAP_CLIENT_ID?.trim();
 
-    // 환경변수가 없으면 지도 로딩 중단
+     // 환경변수가 없으면 지도 로딩 중단
     const clientId = envClientId;
 
     if (!clientId) {
