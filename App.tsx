@@ -19,7 +19,8 @@ const WeddingApp: React.FC = () => {
   const [isAnyModalOpen, setIsAnyModalOpen] = useState(false);
 
   // 데모용 감사 화면 전환
-  const [isAfterWedding, setIsAfterWedding] = useState(false);
+  const isAfterWedding =
+  new Date() >= new Date('2026-12-26T11:30:00+09:00');
 
   const touchStartY = useRef(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -367,27 +368,21 @@ const WeddingApp: React.FC = () => {
           </div>
         )}
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={SECTIONS[currentIdx]}
-            initial={{ opacity: 0, y: currentIdx === 1 ? 20 : 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -100 }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
-            className="h-full w-full will-change-transform transform-gpu"
-          >
-            {currentIdx === 0 && (
-              <Hero startAnimation={!showOpening} />
-            )}
+        <div
+          key={SECTIONS[currentIdx]}
+          className="h-full w-full"
+        >
+          {currentIdx === 0 && (
+            <Hero startAnimation={!showOpening} />
+          )}
 
-            {currentIdx === 1 && (
-              <MainContent
-                ref={mainContentRef}
-                onModalStateChange={setIsAnyModalOpen}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+          {currentIdx === 1 && (
+            <MainContent
+              ref={mainContentRef}
+              onModalStateChange={setIsAnyModalOpen}
+            />
+          )}
+        </div>
 
         {currentIdx >= 1 && <ShareButton />}
 
