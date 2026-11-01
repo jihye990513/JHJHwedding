@@ -1,4 +1,5 @@
-import type { Handler } from '@netlify/functions';
+import { withLambda } from '@netlify/aws-lambda-compat';
+import type { HandlerEvent } from '@netlify/aws-lambda-compat';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import {
@@ -57,7 +58,7 @@ function makeHash(password: string, salt: string) {
     return scryptSync(password, salt, 64);
 }
 
-export const handler: Handler = async (event) => {
+export default withLambda(async (event: HandlerEvent) => {
     if (!['GET', 'POST'].includes(event.httpMethod)) {
         return reply(405, { error: '지원하지 않는 요청입니다.' });
     }
@@ -281,4 +282,4 @@ export const handler: Handler = async (event) => {
             error: '방명록을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.'
         });
     }
-};
+});
