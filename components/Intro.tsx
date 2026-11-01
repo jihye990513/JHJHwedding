@@ -107,13 +107,16 @@ const Intro: React.FC = () => {
                     {intro.mainText}
                 </div>
 
-                {/* 부모님 정보가 없는 경우 신랑·신부 이름만 표시 */}
+                {/* 양가 부모님 성함 */}
                 <div className="space-y-4 pt-4 font-gowoon">
                     <p className="text-base text-gray-700">
-                        {groomMother?.name && (
+                        {(groomFather?.name || groomMother?.name) && (
                             <>
                                 <span className="font-normal">
-                                    {groomMother.name}
+                                    {[
+                                        groomFather?.name,
+                                        groomMother?.name
+                                    ].filter(Boolean).join(' · ')}
                                 </span>
                                 <span className="text-xs text-gray-400 mx-2">
                                     의 {groom?.parents?.relation || '아들'}
@@ -126,10 +129,13 @@ const Intro: React.FC = () => {
                     </p>
 
                     <p className="text-base text-gray-700">
-                        {brideFather?.name && (
+                        {(brideFather?.name || brideMother?.name) && (
                             <>
                                 <span className="font-normal">
-                                    {brideFather.name}
+                                    {[
+                                        brideFather?.name,
+                                        brideMother?.name
+                                    ].filter(Boolean).join(' · ')}
                                 </span>
                                 <span className="text-xs text-gray-400 mx-2">
                                     의 {bride?.parents?.relation || '딸'}
@@ -239,7 +245,7 @@ const Intro: React.FC = () => {
                                         name={groom?.name}
                                         phone={groom?.phone}
                                     />
-                                     <ContactRow
+                                    <ContactRow
                                         label="신랑 아버지"
                                         name={groomFather?.name}
                                         phone={groomFather?.phone}
