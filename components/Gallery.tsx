@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {
+    useState,
+    useEffect,
+    useRef,
+    useMemo,
+    useCallback
+} from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useModalBackHandler } from '@/hooks/useModalBackHandler';
 import { loadImage } from '@/lib/image-loader.ts';
@@ -8,110 +14,150 @@ interface GalleryProps {
     onModalStateChange: (isOpen: boolean) => void;
 }
 
+// 갤러리 사진 17장
+const IMAGE_NAMES = [
+    'wedding-01', 'wedding-02', 'wedding-03', 'wedding-04',
+    'wedding-05', 'wedding-06', 'wedding-07', 'wedding-08',
+    'wedding-09', 'wedding-10', 'wedding-11', 'wedding-12',
+    'wedding-13', 'wedding-17', 'wedding-14', 'wedding-15',
+    'wedding-18'
+];
+
 const Gallery: React.FC<GalleryProps> = ({ onModalStateChange }) => {
-    // Removed imagesLoaded state as we will show immediately
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const carouselRef = useRef<HTMLDivElement>(null);
     const [dragConstraints, setDragConstraints] = useState(0);
 
-    useModalBackHandler(!!selectedImage, () => setSelectedImage(null));
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const popupTouchStart = useRef<{ x: number; y: number } | null>(null);
 
-    // 15개의 이미지 이름 배열
-    const imageNames = [
-        'wedding-01', 'wedding-02', 'wedding-03', 'wedding-04',
-        'wedding-05', 'wedding-06', 'wedding-07', 'wedding-08',
-        'wedding-09', 'wedding-10', 'wedding-11', 'wedding-12',
-        'wedding-13', 'wedding-17', 'wedding-14', 'wedding-15', 'wedding-18'
-    ];
+    const images = useMemo(
+        () => IMAGE_NAMES.map(name => loadImage(name)),
+        []
+    );
 
-    const images = imageNames.map(name => loadImage(name));
+    const isPopupOpen = selectedImage !== null;
 
-    // Calculate constraints and handle resize
+    const closePopup = useCallback(() => {
+        popupTouchStart.current = null;
+        setSelectedImage(null);
+    }, []);
+
+    useModalBackHandler(isPopupOpen, closePopup);
+
+    // 작은 사진 목록의 가로 드래그 범위
     useEffect(() => {
         const updateConstraints = () => {
-            if (carouselRef.current) {
-                const carouselWidth = carouselRef.current.offsetWidth;
-                const contentWidth = carouselRef.current.scrollWidth;
-                setDragConstraints(contentWidth - carouselWidth);
-            }
+            const carousel = carouselRef.current;
+            if (!carousel) return;
+
+            setDragConstraints(
+                Math.max(0, carousel.scrollWidth - carousel.clientWidth)
+            );
         };
 
-        // 초기 실행 및 약간의 지연 후 재실행 (이미지 렌더링 등 고려)
         updateConstraints();
-        const timer = setTimeout(updateConstraints, 500);
 
+        const timer = window.setTimeout(updateConstraints, 500);
         window.addEventListener('resize', updateConstraints);
+
         return () => {
+            window.clearTimeout(timer);
             window.removeEventListener('resize', updateConstraints);
-            clearTimeout(timer);
         };
-    }, [images]); // images가 변경되면 재계산
+    }, [images]);
 
-    const [direction, setDirection] = useState(0);
+    // 사진을 넘길 때는 잠금을 유지하고,
+    // 팝업을 열거나 닫을 때만 상태 변경
+    useEffect(() => {
+        onModalStateChange(isPopupOpen);
 
-    const variants = {
-        enter: {
-            x: 0,
-            opacity: 1
-        },
-        center: {
-            x: 0,
-            opacity: 1
-        },
-        exit: {
-            x: 0,
-            opacity: 1
-        }
-    };
+        if (!isPopupOpen) return;
 
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            onModalStateChange(false);
+        };
+    }, [isPopupOpen, onModalStateChange]);
+
+    // PC 버튼과 모바일 스와이프가 동일한 함수 사용
     const showNextImage = () => {
-        if (!selectedImage) return;
-        setDirection(1);
-        const currentIndex = images.indexOf(selectedImage);
-        const nextIndex = (currentIndex + 1) % images.length;
-        setSelectedImage(images[nextIndex]);
+        setSelectedImage(current => {
+            if (current === null) return null;
+
+            const currentIndex = images.indexOf(current);
+            return images[(currentIndex + 1) % images.length];
+        });
     };
 
     const showPrevImage = () => {
-        if (!selectedImage) return;
-        setDirection(-1);
-        const currentIndex = images.indexOf(selectedImage);
-        const prevIndex = (currentIndex - 1 + images.length) % images.length;
-        setSelectedImage(images[prevIndex]);
+        setSelectedImage(current => {
+            if (current === null) return null;
+
+            const currentIndex = images.indexOf(current);
+            return images[
+                (currentIndex - 1 + images.length) % images.length
+            ];
+        });
     };
 
-    const swipeConfidenceThreshold = 10000;
-    const swipePower = (offset: number, velocity: number) => {
-        return Math.abs(offset) * velocity;
-    };
+    // 확대 사진은 움직이지 않고 터치 시작 위치만 기록
+    const handlePopupTouchStart = (e: React.TouchEvent) => {
+        e.stopPropagation();
 
-    // [MIG] 모달 오픈 시 배경 스크롤 잠금 및 부모에게 알림 (섹션 이동 방지)
-    useEffect(() => {
-        if (selectedImage) {
-            document.body.style.overflow = 'hidden';
-            onModalStateChange(true);
-        } else {
-            document.body.style.overflow = '';
-            onModalStateChange(false);
+        if (e.touches.length !== 1) {
+            popupTouchStart.current = null;
+            return;
         }
 
-        return () => {
-            document.body.style.overflow = '';
-            onModalStateChange(false);
+        popupTouchStart.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
         };
-    }, [selectedImage, onModalStateChange]);
-
-    // 팝업에서 스크롤 이벤트가 부모로 전파되지 않도록 차단
-    const handlePopupWheel = (e: React.WheelEvent) => {
-        e.stopPropagation();
     };
 
-    const handlePopupTouch = (e: React.TouchEvent) => {
+    const handlePopupTouchMove = (e: React.TouchEvent) => {
         e.stopPropagation();
+
+        if (e.touches.length !== 1) {
+            popupTouchStart.current = null;
+        }
+    };
+
+    // 손을 떼면 가로 방향을 확인해 사진 교체
+    const handlePopupTouchEnd = (e: React.TouchEvent) => {
+        e.stopPropagation();
+
+        const start = popupTouchStart.current;
+        popupTouchStart.current = null;
+
+        if (!start || e.touches.length > 0) return;
+
+        const end = e.changedTouches[0];
+        if (!end) return;
+
+        const deltaX = end.clientX - start.x;
+        const deltaY = end.clientY - start.y;
+
+        if (
+            Math.abs(deltaX) < 30 ||
+            Math.abs(deltaX) <= Math.abs(deltaY) * 1.2
+        ) {
+            return;
+        }
+
+        if (deltaX < 0) {
+            showNextImage();
+        } else {
+            showPrevImage();
+        }
     };
 
     return (
         <div className="h-full w-full flex flex-col items-center bg-white px-6 pb-6 md:px-12 md:pb-12 overflow-hidden">
+            {/* 헤더 */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -119,12 +165,22 @@ const Gallery: React.FC<GalleryProps> = ({ onModalStateChange }) => {
                 viewport={{ once: true }}
                 className="text-center pt-8 pb-10"
             >
-                <p className="text-[10px] font-joseon text-gray-400 tracking-[0.4em] uppercase mb-1">{weddingData.gallery.label}</p>
-                <h2 className="text-2xl font-myeongjo text-gray-800 mb-6 leading-tight">{weddingData.gallery.title}</h2>
-                <div className="w-8 h-[1px] bg-gray-200 mx-auto mb-6"></div>
-                <p className="text-sm font-gowoon text-gray-500">{weddingData.gallery.subtitle}</p>
+                <p className="text-[10px] font-joseon text-gray-400 tracking-[0.4em] uppercase mb-1">
+                    {weddingData.gallery.label}
+                </p>
+
+                <h2 className="text-2xl font-myeongjo text-gray-800 mb-6 leading-tight">
+                    {weddingData.gallery.title}
+                </h2>
+
+                <div className="w-8 h-[1px] bg-gray-200 mx-auto mb-6" />
+
+                <p className="text-sm font-gowoon text-gray-500">
+                    {weddingData.gallery.subtitle}
+                </p>
             </motion.div>
 
+            {/* 작은 사진 목록 */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -140,39 +196,31 @@ const Gallery: React.FC<GalleryProps> = ({ onModalStateChange }) => {
                         className="flex gap-4 h-full items-center"
                         drag="x"
                         dragConstraints={{ right: 0, left: -dragConstraints }}
-                        dragTransition={{ bounceStiffness: 200, bounceDamping: 20 }}
-                        style={{
-                            willChange: 'transform',
-                            backfaceVisibility: 'hidden',
-                            WebkitBackfaceVisibility: 'hidden',
-                            transform: 'translateZ(0)',
-                            WebkitTransform: 'translateZ(0)'
+                        dragTransition={{
+                            bounceStiffness: 200,
+                            bounceDamping: 20
                         }}
+                        style={{ willChange: 'transform' }}
                     >
                         {images.map((image, index) => (
                             <div
-                                key={index}
+                                key={IMAGE_NAMES[index]}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setDirection(0);
+                                    popupTouchStart.current = null;
                                     setSelectedImage(image);
                                 }}
-                                onTouchEnd={(e) => {
-                                    e.stopPropagation();
-                                }}
+                                onTouchEnd={(e) => e.stopPropagation()}
                                 className="flex-shrink-0 aspect-[3/4] rounded-lg shadow-lg overflow-hidden bg-gray-100 interactive relative"
                                 style={{ width: '80vw', maxWidth: '400px' }}
                             >
                                 <img
                                     src={image}
-                                    alt={`gallery-${index + 1}`}
+                                    alt={`웨딩사진 ${index + 1}`}
                                     decoding="async"
+                                    draggable={false}
                                     className="w-full h-full object-cover pointer-events-none"
                                     style={{
-                                        backfaceVisibility: 'hidden',
-                                        WebkitBackfaceVisibility: 'hidden',
-                                        transform: 'translateZ(0)',
-                                        WebkitTransform: 'translateZ(0)',
                                         WebkitTouchCallout: 'none',
                                         WebkitUserSelect: 'none',
                                         userSelect: 'none'
@@ -184,91 +232,86 @@ const Gallery: React.FC<GalleryProps> = ({ onModalStateChange }) => {
                 </motion.div>
             </motion.div>
 
-            {/* Image Popup */}
-            <AnimatePresence custom={direction}>
-                {selectedImage && (
+            {/* 확대 팝업 */}
+            <AnimatePresence>
+                {selectedImage !== null && (
                     <motion.div
+                        key="gallery-popup"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setSelectedImage(null)}
-                        onWheel={handlePopupWheel}
-                        onTouchMove={handlePopupTouch}
+                        transition={{ duration: 0.15 }}
+                        onClick={closePopup}
+                        onWheel={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
                         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="웨딩사진 크게 보기"
                     >
-                        {/* 네비게이션 버튼 (PC/태블릿용) */}
+                        {/* 이전 사진 버튼 */}
                         <button
+                            type="button"
+                            aria-label="이전 사진"
                             className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-20 p-4 transition-colors hidden md:block"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 showPrevImage();
                             }}
                         >
-                            <i className="fa-solid fa-chevron-left text-3xl"></i>
+                            <i className="fa-solid fa-chevron-left text-3xl" />
                         </button>
+
+                        {/* 다음 사진 버튼 */}
                         <button
+                            type="button"
+                            aria-label="다음 사진"
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-20 p-4 transition-colors hidden md:block"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 showNextImage();
                             }}
                         >
-                            <i className="fa-solid fa-chevron-right text-3xl"></i>
+                            <i className="fa-solid fa-chevron-right text-3xl" />
                         </button>
 
+                        {/* 모바일에서는 스와이프 방향만 감지 */}
                         <div
                             className="relative w-full h-full flex items-center justify-center p-4 overflow-hidden"
+                            style={{ touchAction: 'pan-y pinch-zoom' }}
                             onClick={(e) => e.stopPropagation()}
+                            onTouchStart={handlePopupTouchStart}
+                            onTouchMove={handlePopupTouchMove}
+                            onTouchEnd={handlePopupTouchEnd}
+                            onTouchCancel={() => {
+                                popupTouchStart.current = null;
+                            }}
                         >
-                            <motion.img
-                                key={selectedImage}
+                            <img
                                 src={selectedImage}
-                                custom={direction}
-                                variants={variants}
-                                initial="enter"
-                                animate="center"
-                                exit="exit"
-                                transition={{
-                                    x: { type: "spring", stiffness: 300, damping: 30 }
-                                }}
-                                drag="x"
-                                dragConstraints={{ left: 0, right: 0 }}
-                                dragElastic={1}
-                                onDragEnd={(e, { offset, velocity }) => {
-                                    const swipe = swipePower(offset.x, velocity.x);
-
-                                    if (swipe < -swipeConfidenceThreshold) {
-                                        showNextImage();
-                                    } else if (swipe > swipeConfidenceThreshold) {
-                                        showPrevImage();
-                                    }
-                                }}
+                                alt="확대된 웨딩사진"
+                                draggable={false}
                                 onContextMenu={(e) => e.preventDefault()}
-                                onTouchStart={(e) => {
-                                    // iOS 롱프레스 방지
-                                    e.currentTarget.style.webkitTouchCallout = 'none';
-                                }}
                                 className="max-w-[95vw] max-h-[85vh] md:max-w-[80vw] lg:max-w-4xl object-contain shadow-2xl no-context-menu"
-                                alt="selected"
                                 style={{
-                                    willChange: 'transform',
-                                    backfaceVisibility: 'hidden',
-                                    WebkitBackfaceVisibility: 'hidden',
-                                    transform: 'translateZ(0)',
-                                    WebkitTransform: 'translateZ(0)',
                                     WebkitTouchCallout: 'none',
                                     WebkitUserSelect: 'none',
                                     userSelect: 'none'
                                 }}
-                                draggable={false}
                             />
                         </div>
 
+                        {/* 닫기 버튼 */}
                         <button
-                            onClick={() => setSelectedImage(null)}
-                            className="absolute top-6 right-6 text-white/60 hover:text-white transition-colors z-20"
+                            type="button"
+                            aria-label="사진 닫기"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                closePopup();
+                            }}
+                            className="absolute top-6 right-6 text-white/60 hover:text-white transition-colors z-20 p-2"
                         >
-                            <i className="fa-solid fa-xmark text-3xl"></i>
+                            <i className="fa-solid fa-xmark text-3xl" />
                         </button>
                     </motion.div>
                 )}
