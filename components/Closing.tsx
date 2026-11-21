@@ -5,7 +5,7 @@ import { weddingData } from '@/data/content';
 
 const Closing: React.FC = () => {
     return (
-        <section className="relative w-full h-[500px] overflow-hidden flex items-end justify-center bg-white pb-[10rem]">
+        <section className="relative w-full h-[600px] overflow-hidden flex items-end justify-center bg-white pb-[10rem]">
             {/* 배경 이미지 */}
             <div
                 className="absolute inset-0"
