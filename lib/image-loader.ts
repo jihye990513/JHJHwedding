@@ -37,7 +37,7 @@ export function preloadGalleryImages(): Promise<void> {
         'wedding-01', 'wedding-02', 'wedding-03', 'wedding-04',
         'wedding-05', 'wedding-06', 'wedding-07', 'wedding-08',
         'wedding-09', 'wedding-10', 'wedding-11', 'wedding-12',
-        'wedding-13', 'wedding-14', 'wedding-15'
+        'wedding-13', 'wedding-17', 'wedding-14', 'wedding-15'
     ];
 
     const preloadPromises = galleryImageNames.map(name => {

@@ -16,12 +16,12 @@ const Gallery: React.FC<GalleryProps> = ({ onModalStateChange }) => {
 
     useModalBackHandler(!!selectedImage, () => setSelectedImage(null));
 
-    // 17개의 이미지 이름 배열
+    // 15개의 이미지 이름 배열
     const imageNames = [
         'wedding-01', 'wedding-02', 'wedding-03', 'wedding-04',
         'wedding-05', 'wedding-06', 'wedding-07', 'wedding-08',
         'wedding-09', 'wedding-10', 'wedding-11', 'wedding-12',
-        'wedding-13', 'wedding-14', 'wedding-15'
+        'wedding-13', 'wedding-17', 'wedding-14', 'wedding-15', 'wedding-18'
     ];
 
     const images = imageNames.map(name => loadImage(name));

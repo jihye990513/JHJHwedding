@@ -34,13 +34,13 @@ export const uiText = {
         title: "우리 두 사람의 이야기",
         subtitle: `결혼을 앞두고 저희 두 사람의
 인터뷰를 준비했습니다.`,
-        button: "어떤 배우자가 될까요 Q&A"
+        button: "Q&A 확인하기"
     },
 
     gallery: {
         label: "GALLERY",
         title: "소중한 순간들",
-        subtitle: "저희의 아름다운 순간을 함께해주세요"
+        subtitle: "사진을 클릭하면 크게 보실 수 있습니다 "
     },
 
     location: {
